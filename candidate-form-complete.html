@@ -1,0 +1,1772 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>应聘信息填写 - 义齿工厂招聘</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <!-- 动态加载 Supabase SDK -->
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Noto Sans SC', Arial, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        .container {
+            max-width: 800px;
+            margin: 20px auto;
+            background: white;
+            border-radius: 12px;
+            padding: 30px;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.1);
+        }
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        .header h1 {
+            color: #667eea;
+            font-size: 28px;
+            margin-bottom: 10px;
+            font-weight: 600;
+        }
+        .header p {
+            color: #666;
+            font-size: 16px;
+        }
+        .form-group {
+            margin-bottom: 20px;
+        }
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 500;
+            color: #333;
+            font-size: 14px;
+        }
+        .form-group input,
+        .form-group select,
+        .form-group textarea {
+            width: 100%;
+            padding: 12px 15px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 16px;
+            transition: all 0.3s ease;
+            font-family: 'Noto Sans SC', Arial, sans-serif;
+        }
+        .form-group input:focus,
+        .form-group select:focus,
+        .form-group textarea:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+        .form-group.error input,
+        .form-group.error select,
+        .form-group.error textarea {
+            border-color: #e74c3c;
+        }
+        .error-message {
+            color: #e74c3c;
+            font-size: 12px;
+            margin-top: 5px;
+            display: none;
+        }
+        .form-group.error .error-message {
+            display: block;
+        }
+        .radio-group {
+            display: flex;
+            gap: 20px;
+            flex-wrap: wrap;
+        }
+        .radio-group label {
+            display: flex;
+            align-items: center;
+            font-weight: normal;
+            cursor: pointer;
+            margin-bottom: 0;
+        }
+        .radio-group input[type="radio"],
+        .radio-group input[type="checkbox"] {
+            width: auto;
+            margin-right: 8px;
+        }
+        .btn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            width: 100%;
+            margin-top: 10px;
+        }
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+        }
+        .btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+        .btn.loading {
+            position: relative;
+            padding-right: 30px;
+        }
+        .btn.loading::after {
+            content: '';
+            position: absolute;
+            right: 10px;
+            top: 50%;
+            width: 16px;
+            height: 16px;
+            margin-top: -8px;
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            border-radius: 50%;
+            border-top-color: white;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin {
+            to {
+                transform: rotate(360deg);
+            }
+        }
+        .template-group {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            border-left: 4px solid #667eea;
+        }
+        .template-group h2 {
+            color: #667eea;
+            font-size: 20px;
+            margin-bottom: 20px;
+            font-weight: 600;
+        }
+        .success-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(255,255,255,0.95);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            flex-direction: column;
+            z-index: 1000;
+        }
+        .success-overlay.show {
+            display: flex;
+        }
+        .success-icon {
+            width: 80px;
+            height: 80px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 20px;
+        }
+        .success-icon::after {
+            content: '✓';
+            color: white;
+            font-size: 40px;
+        }
+        .success-title {
+            font-size: 24px;
+            color: #333;
+            margin-bottom: 10px;
+        }
+        .success-message {
+            color: #666;
+            margin-bottom: 30px;
+        }
+        .loading-spinner {
+            width: 40px;
+            height: 40px;
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #667eea;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-bottom: 15px;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        .alert {
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+        .alert-error {
+            background: #ffebee;
+            color: #c62828;
+            border-left: 4px solid #c62828;
+        }
+        .alert-info {
+            background: #e3f2fd;
+            color: #1565c0;
+            border-left: 4px solid #1565c0;
+        }
+        .progress-bar {
+            width: 100%;
+            height: 4px;
+            background: #e0e0e0;
+            border-radius: 2px;
+            margin: 20px 0;
+            overflow: hidden;
+        }
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            width: 0%;
+            transition: width 0.3s ease;
+        }
+        /* 工作经历卡片样式 */
+        .work-experience-section {
+            margin-bottom: 25px;
+        }
+        .work-experience-section h3 {
+            color: #667eea;
+            font-size: 18px;
+            margin-bottom: 15px;
+            font-weight: 600;
+        }
+        .experience-card {
+            background: #f8f9ff;
+            border: 2px solid #e0e0e0;
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 15px;
+            position: relative;
+            transition: all 0.3s ease;
+        }
+        .experience-card:hover {
+            border-color: #667eea;
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.1);
+        }
+        .experience-card.editing {
+            border-color: #667eea;
+            background: #fff;
+        }
+        .card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid #e0e0e0;
+        }
+        .card-title {
+            font-weight: 600;
+            color: #333;
+            font-size: 16px;
+        }
+        .card-actions {
+            display: flex;
+            gap: 8px;
+        }
+        .card-btn {
+            padding: 6px 12px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 13px;
+            transition: all 0.3s ease;
+        }
+        .card-btn-edit {
+            background: #667eea;
+            color: white;
+        }
+        .card-btn-edit:hover {
+            background: #5a6fd6;
+        }
+        .card-btn-delete {
+            background: #e74c3c;
+            color: white;
+        }
+        .card-btn-delete:hover {
+            background: #c0392b;
+        }
+        .card-btn-save {
+            background: #27ae60;
+            color: white;
+        }
+        .card-btn-save:hover {
+            background: #219a52;
+        }
+        .card-btn-cancel {
+            background: #95a5a6;
+            color: white;
+        }
+        .card-btn-cancel:hover {
+            background: #7f8c8d;
+        }
+        .card-content {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+        }
+        .card-content .form-group {
+            margin-bottom: 0;
+        }
+        .card-content .form-group.full-width {
+            grid-column: 1 / -1;
+        }
+        .card-content .form-group label {
+            font-size: 13px;
+            margin-bottom: 5px;
+        }
+        .card-content .form-group input,
+        .card-content .form-group textarea {
+            padding: 10px 12px;
+            font-size: 14px;
+        }
+        .date-range {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .date-range input {
+            flex: 1;
+        }
+        .date-range span {
+            color: #666;
+            font-size: 14px;
+        }
+        .checkbox-label {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            cursor: pointer;
+            font-size: 14px;
+            color: #666;
+        }
+        .checkbox-label input[type="checkbox"] {
+            width: auto;
+        }
+        .experience-display {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+        }
+        .experience-display .display-item {
+            font-size: 14px;
+        }
+        .experience-display .display-item.full-width {
+            grid-column: 1 / -1;
+        }
+        .experience-display .display-label {
+            color: #666;
+            font-size: 12px;
+            margin-bottom: 3px;
+        }
+        .experience-display .display-value {
+            color: #333;
+            font-weight: 500;
+        }
+        .btn-add-experience {
+            background: #fff;
+            border: 2px dashed #667eea;
+            color: #667eea;
+            padding: 15px;
+            border-radius: 12px;
+            cursor: pointer;
+            font-size: 15px;
+            font-weight: 500;
+            width: 100%;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+        .btn-add-experience:hover {
+            background: #f8f9ff;
+            border-color: #5a6fd6;
+        }
+        @media (max-width: 768px) {
+            .card-content {
+                grid-template-columns: 1fr;
+            }
+            .experience-display {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>📝 应聘信息填写</h1>
+            <p>请选择您要应聘的岗位并填写相关信息</p>
+        </div>
+
+        <div id="errorContainer"></div>
+
+        <div class="progress-bar">
+            <div class="progress-fill" id="progressFill"></div>
+        </div>
+
+        <form id="applicationForm">
+            <div class="form-group">
+                <label for="position">应聘岗位 *</label>
+                <select id="position" name="position" onchange="handlePositionChange()">
+                    <option value="">请选择应聘岗位</option>
+                    <option value="学徒">学徒</option>
+                    <option value="普工">普工</option>
+                    <option value="牙科技工">牙科技工</option>
+                    <option value="牙科质检员">牙科质检员</option>
+                </select>
+                <div class="error-message">请选择应聘岗位</div>
+            </div>
+
+            <div id="templateGroup" class="template-group" style="display: none;">
+                <h2 id="templateTitle">岗位信息</h2>
+                <div id="fieldsLoadingIndicator" style="display: none; text-align: center; padding: 30px;">
+                    <div class="loading-spinner"></div>
+                    <p style="color: #666; margin-top: 15px;">正在加载表单字段...</p>
+                </div>
+                <div id="dynamicFieldsContainer"></div>
+                
+                <!-- 工作经历卡片式管理 -->
+                <div class="work-experience-section" id="workExperienceSection">
+                    <h3>💼 工作经历</h3>
+                    <div id="experienceCardsContainer"></div>
+                    <button type="button" class="btn-add-experience" onclick="addExperienceCard()">
+                        <span>+</span> 添加工作经历
+                    </button>
+                </div>
+            </div>
+
+            <button type="submit" class="btn" id="submitBtn">
+                <span id="btnText">提交应聘信息</span>
+            </button>
+        </form>
+    </div>
+
+    <!-- 成功提示遮罩 -->
+    <div class="success-overlay" id="successOverlay">
+        <div class="loading-spinner" id="loadingSpinner"></div>
+        <div class="success-icon" id="successIcon" style="display: none;"></div>
+        <div class="success-title" id="successTitle">正在提交...</div>
+        <div class="success-message" id="successMessage">请稍候，正在保存您的应聘信息</div>
+    </div>
+
+    <script>
+        // Supabase 配置
+        var supabaseUrl = 'https://dxrghlqnwfwpuxjvyisv.supabase.co';
+        var supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImR4cmdobHFud2Z3cHV4anZ5aXN2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQ2ODYyMjAsImV4cCI6MjA5MDI2MjIyMH0.r6hDrTVZ1p_Qq6sHuLeBEo3SFqGEh0trwbRMXLWnrNQ';
+        var supabase = null;
+        var currentFields = [];
+        var fieldOptions = {};
+        var applicationId = null;
+
+        // 动态加载 Supabase SDK
+        function loadSupabaseSDK() {
+            return new Promise(function(resolve, reject) {
+                var script = document.createElement('script');
+                script.src = 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js';
+                script.onload = function() {
+                    console.log('SDK 加载成功');
+                    resolve();
+                };
+                script.onerror = function() {
+                    console.error('SDK 加载失败，尝试备用 CDN');
+                    // 尝试备用 CDN
+                    var script2 = document.createElement('script');
+                    script2.src = 'https://unpkg.com/@supabase/supabase-js@2/dist/umd/supabase.min.js';
+                    script2.onload = function() {
+                        console.log('备用 SDK 加载成功');
+                        resolve();
+                    };
+                    script2.onerror = function() {
+                        reject(new Error('所有 CDN 加载失败'));
+                    };
+                    document.head.appendChild(script2);
+                };
+                document.head.appendChild(script);
+            });
+        }
+
+        // 初始化 Supabase
+        function initSupabase() {
+            if (!supabase && window.supabase && window.supabase.createClient) {
+                supabase = window.supabase.createClient(supabaseUrl, supabaseKey);
+            }
+            return supabase !== null;
+        }
+
+        // 页面加载时初始化
+        window.addEventListener('load', function() {
+            loadSupabaseSDK()
+                .then(function() {
+                    setTimeout(function() {
+                        if (window.supabase && window.supabase.createClient) {
+                            supabase = window.supabase.createClient(supabaseUrl, supabaseKey);
+                            console.log('✅ Supabase 客户端已创建');
+                            // 不需要立即加载字段，等用户选择岗位后再加载
+                        } else {
+                            console.error('❌ SDK 加载失败：window.supabase 不存在');
+                        }
+                    }, 500);
+                })
+                .catch(function(error) {
+                    console.error('❌ SDK 加载失败:', error.message);
+                });
+        });
+
+        // 备用默认字段
+        var defaultBaseFields = [
+            { id: 1, field_name: 'name', field_label: '姓名', field_type: 'text', is_required: true },
+            { id: 2, field_name: 'gender', field_label: '性别', field_type: 'radio', is_required: true, options: '男\n女' },
+            { id: 3, field_name: 'age', field_label: '年龄', field_type: 'number', is_required: true },
+            { id: 4, field_name: 'phone', field_label: '联系电话', field_type: 'text', is_required: true },
+            { id: 5, field_name: 'education', field_label: '学历', field_type: 'select', is_required: true, options: '初中及以下\n高中/中专\n大专\n本科\n研究生及以上' },
+            { id: 6, field_name: 'experience', field_label: '工作经验', field_type: 'select', is_required: true, options: '无经验\n1年以下\n1-3年\n3-5年\n5年以上' },
+            { id: 7, field_name: 'source_channel', field_label: '招聘渠道', field_type: 'select', is_required: true, options: '内部介绍\n招聘网站\n社交媒体\n线下招聘\n其他' },
+            { id: 8, field_name: 'self_introduction', field_label: '自我介绍', field_type: 'textarea', is_required: false }
+        ];
+
+        var defaultTechFields = [
+            { id: 1, field_name: 'name', field_label: '姓名', field_type: 'text', is_required: true },
+            { id: 2, field_name: 'gender', field_label: '性别', field_type: 'radio', is_required: true, options: '男\n女' },
+            { id: 3, field_name: 'age', field_label: '年龄', field_type: 'number', is_required: true },
+            { id: 4, field_name: 'phone', field_label: '联系电话', field_type: 'text', is_required: true },
+            { id: 5, field_name: 'education', field_label: '学历', field_type: 'select', is_required: true, options: '初中及以下\n高中/中专\n大专\n本科\n研究生及以上' },
+            { id: 6, field_name: 'experience', field_label: '工作经验', field_type: 'select', is_required: true, options: '无经验\n1年以下\n1-3年\n3-5年\n5年以上' },
+            { id: 7, field_name: 'source_channel', field_label: '招聘渠道', field_type: 'select', is_required: true, options: '内部介绍\n招聘网站\n社交媒体\n线下招聘\n其他' },
+            { id: 8, field_name: 'technical_skills', field_label: '技术技能', field_type: 'checkbox', is_required: false, options: 'CAD/CAM设计\n义齿制作\n烤瓷技术\n活动义齿\n固定义齿\n种植修复' },
+            { id: 9, field_name: 'self_introduction', field_label: '自我介绍', field_type: 'textarea', is_required: false }
+        ];
+
+        // 从数据库加载字段
+        async function loadFieldsFromDatabase(templateId) {
+            try {
+                // 等待 Supabase 初始化（最多等待3秒）
+                var waitCount = 0;
+                while (!supabase && waitCount < 30) {
+                    await new Promise(resolve => setTimeout(resolve, 100));
+                    waitCount++;
+                }
+                
+                if (!supabase) {
+                    console.log('Supabase未初始化，无法从数据库加载');
+                    return null;
+                }
+                
+                console.log('尝试从数据库加载模板字段，模板ID:', templateId);
+                
+                // 查询模板字段映射
+                var { data: templateFields, error: fieldsError } = await supabase
+                    .from('template_field_mappings')
+                    .select('field_id, sort_order')
+                    .eq('template_id', templateId)
+                    .order('sort_order');
+                
+                if (fieldsError || !templateFields || templateFields.length === 0) {
+                    console.log('数据库无模板字段映射数据');
+                    return null;
+                }
+                
+                // 获取字段ID列表
+                var fieldIds = [];
+                for (var i = 0; i < templateFields.length; i++) {
+                    fieldIds.push(templateFields[i].field_id);
+                }
+                
+                // 查询字段配置
+                var { data: fields, error: configError } = await supabase
+                    .from('field_configs')
+                    .select('*')
+                    .in('id', fieldIds);
+                
+                if (configError || !fields || fields.length === 0) {
+                    console.log('数据库无字段配置数据');
+                    return null;
+                }
+                
+                // 创建字段映射
+                var fieldsMap = {};
+                for (var j = 0; j < fields.length; j++) {
+                    fieldsMap[fields[j].id] = fields[j];
+                }
+                
+                // 按照模板字段映射的顺序组装字段列表
+                var orderedFields = [];
+                for (var k = 0; k < templateFields.length; k++) {
+                    var field = fieldsMap[templateFields[k].field_id];
+                    if (field) {
+                        // 查询字段选项
+                        if (field.field_type === 'select' || field.field_type === 'radio' || field.field_type === 'checkbox') {
+                            var { data: options, error: optionsError } = await supabase
+                                .from('field_options')
+                                .select('*')
+                                .eq('field_id', field.id)
+                                .order('sort_order');
+                            
+                            if (!optionsError && options && options.length > 0) {
+                                var optionsText = '';
+                                for (var l = 0; l < options.length; l++) {
+                                    // 使用正确的列名 option_value 和 option_label
+                                    optionsText += (options[l].option_value || options[l].option_label) + '\n';
+                                }
+                                field.options = optionsText.trim();
+                            }
+                        }
+                        // 只添加前端显示的字段
+                        if (field.is_frontend !== false) {
+                            orderedFields.push(field);
+                        }
+                    }
+                }
+                
+                if (orderedFields.length > 0) {
+                    console.log('从数据库加载字段成功:', orderedFields.length, '个字段');
+                    // 打印每个字段的详细信息用于调试
+                    for (var i = 0; i < orderedFields.length; i++) {
+                        var f = orderedFields[i];
+                        console.log('字段', i, ':', f.field_name, '| 类型:', f.field_type, '| 选项:', f.options ? f.options.substring(0, 50) : '无');
+                    }
+                    // 保存到本地存储作为缓存
+                    localStorage.setItem('templateFields_' + templateId, JSON.stringify(orderedFields));
+                    return orderedFields;
+                }
+            } catch (e) {
+                console.error('从数据库加载字段失败:', e);
+            }
+            return null;
+        }
+
+        // 从本地存储加载字段
+        function loadFieldsFromLocalStorage(templateId) {
+            try {
+                var savedFields = localStorage.getItem('templateFields_' + templateId);
+                if (savedFields) {
+                    var fields = JSON.parse(savedFields);
+                    if (fields && fields.length > 0) {
+                        // 过滤只显示前端字段
+                        var frontendFields = fields.filter(function(field) {
+                            return field.is_frontend !== false;
+                        });
+                        console.log('从本地存储加载字段成功:', frontendFields.length, '个字段');
+                        return frontendFields;
+                    }
+                }
+            } catch (e) {
+                console.error('从本地存储加载失败:', e);
+            }
+            console.log('本地存储无字段数据，使用默认字段');
+            return null;
+        }
+
+        async function handlePositionChange() {
+            var position = document.getElementById('position').value;
+            var templateGroup = document.getElementById('templateGroup');
+            var templateTitle = document.getElementById('templateTitle');
+            var container = document.getElementById('dynamicFieldsContainer');
+            var loadingIndicator = document.getElementById('fieldsLoadingIndicator');
+            var submitBtn = document.getElementById('submitBtn');
+            
+            if (!position) {
+                templateGroup.style.display = 'none';
+                updateProgress();
+                return;
+            }
+            
+            // 显示加载状态
+            templateGroup.style.display = 'block';
+            loadingIndicator.style.display = 'block';
+            container.innerHTML = '';
+            container.style.display = 'none';
+            
+            // 禁用提交按钮
+            if (submitBtn) {
+                submitBtn.disabled = true;
+            }
+            var btnText = document.getElementById('btnText');
+            if (btnText) {
+                btnText.textContent = '正在加载表单...';
+            }
+            
+            // 确定模板ID
+            var templateId;
+            if (position === '学徒' || position === '普工') {
+                templateId = 16; // 基础模板（数据库中实际ID）
+            } else {
+                templateId = 17; // 技术岗位模板（数据库中实际ID）
+            }
+            
+            console.log('选择岗位:', position, '使用模板ID:', templateId);
+            
+            // 确保 Supabase 已初始化
+            if (!supabase) {
+                console.log('Supabase 未初始化，尝试初始化...');
+                try {
+                    await loadSupabaseSDK();
+                    initSupabase();
+                } catch (e) {
+                    console.error('Supabase 初始化失败:', e);
+                }
+            }
+            
+            // 强制清除缓存，确保获取最新数据
+            localStorage.removeItem('templateFields_' + templateId);
+            
+            // 优先从数据库加载，如果失败使用默认字段
+            var fields = null;
+            var retryCount = 0;
+            var maxRetries = 3;
+            
+            while (!fields && retryCount < maxRetries) {
+                fields = await loadFieldsFromDatabase(templateId);
+                if (!fields) {
+                    retryCount++;
+                    console.log('字段加载失败，重试 ' + retryCount + '/' + maxRetries);
+                    await new Promise(resolve => setTimeout(resolve, 500)); // 等待500ms后重试
+                }
+            }
+            
+            if (!fields) {
+                if (templateId === 16) {
+                    fields = defaultBaseFields;
+                } else {
+                    fields = defaultTechFields;
+                }
+                console.log('使用默认字段:', fields.length, '个字段');
+            } else {
+                console.log('✅ 从数据库加载字段成功:', fields.length, '个字段');
+            }
+            
+            currentFields = fields;
+            templateTitle.textContent = position + ' - 信息填写';
+            
+            // 隐藏加载指示器，显示表单字段
+            loadingIndicator.style.display = 'none';
+            container.style.display = 'block';
+            
+            // 准备字段选项
+            fieldOptions = {};
+            for (var i = 0; i < fields.length; i++) {
+                var field = fields[i];
+                if (field.field_type === 'select' || field.field_type === 'radio' || field.field_type === 'checkbox') {
+                    var opts = [];
+                    if (field.options) {
+                        opts = field.options.split('\n').filter(function(o) { return o.trim(); });
+                    }
+                    // 如果没有选项，使用默认选项
+                    if (opts.length === 0) {
+                        opts = getDefaultOptions(field.field_name);
+                    }
+                    fieldOptions[field.id] = opts.map(function(opt, idx) {
+                        return { value: opt.trim(), label: opt.trim(), sort_order: idx + 1 };
+                    });
+                }
+            }
+            
+            // 获取默认选项的辅助函数
+            function getDefaultOptions(fieldName) {
+                var defaults = {
+                    'gender': ['男', '女'],
+                    'marital_status': ['未婚', '已婚', '离异'],
+                    'Graduation Status': ['在读', '已毕业', '休学'],
+                    'Shift work': ['是', '否'],
+                    'source_channel': ['内部介绍', '招聘网站', '社交媒体', '线下招聘', '其他']
+                };
+                return defaults[fieldName] || ['选项1', '选项2', '选项3'];
+            }
+            
+            renderDynamicFields(container, fields);
+            updateProgress();
+            
+            // 启用提交按钮
+            var submitBtn = document.getElementById('submitBtn');
+            if (submitBtn) {
+                submitBtn.disabled = false;
+            }
+            var btnText = document.getElementById('btnText');
+            if (btnText) {
+                btnText.textContent = '提交应聘信息';
+            }
+            
+            console.log('字段渲染完成:', fields.length, '个字段');
+        }
+
+        function renderDynamicFields(container, fields) {
+            var html = '';
+            
+            for (var i = 0; i < fields.length; i++) {
+                var field = fields[i];
+                var fieldId = 'field_' + field.id;
+                
+                html += '<div class="form-group" data-field-id="' + field.id + '">';
+                html += '<label>' + field.field_label + (field.is_required ? ' *' : '') + '</label>';
+                
+                switch (field.field_type) {
+                    case 'text':
+                        html += '<input type="text" id="' + fieldId + '" name="' + field.field_name + '" placeholder="请输入' + field.field_label + '" ' + (field.is_required ? 'required' : '') + '>';
+                        break;
+                    case 'textarea':
+                        html += '<textarea id="' + fieldId + '" name="' + field.field_name + '" placeholder="请输入' + field.field_label + '" rows="4" ' + (field.is_required ? 'required' : '') + '></textarea>';
+                        break;
+                    case 'number':
+                        html += '<input type="number" id="' + fieldId + '" name="' + field.field_name + '" placeholder="请输入' + field.field_label + '" ' + (field.is_required ? 'required' : '') + '>';
+                        break;
+                    case 'select':
+                        html += '<select id="' + fieldId + '" name="' + field.field_name + '" ' + (field.is_required ? 'required' : '') + ' onchange="handleSelectChange(this, \'' + field.field_name + '\')" data-field-name="' + field.field_name + '"><option value="">请选择' + field.field_label + '</option>';
+                        var options = fieldOptions[field.id] || [];
+                        for (var j = 0; j < options.length; j++) {
+                            html += '<option value="' + options[j].value + '">' + options[j].label + '</option>';
+                        }
+                        html += '</select>';
+                        // 添加补充信息输入框容器
+                        html += '<div id="' + fieldId + '_extra" style="display: none; margin-top: 10px;">';
+                        html += '<input type="text" id="' + fieldId + '_extra_input" name="' + field.field_name + '_extra" placeholder="" style="width: 100%; padding: 12px; border: 2px solid #e0e0e0; border-radius: 8px; font-size: 16px; transition: all 0.3s;">';
+                        html += '</div>';
+                        break;
+                    case 'radio':
+                        html += '<div class="radio-group" id="' + fieldId + '">';
+                        var roptions = fieldOptions[field.id] || [];
+                        for (var j = 0; j < roptions.length; j++) {
+                            html += '<label><input type="radio" name="' + field.field_name + '" value="' + roptions[j].value + '" ' + (field.is_required && j === 0 ? 'required' : '') + '> ' + roptions[j].label + '</label>';
+                        }
+                        html += '</div>';
+                        break;
+                    case 'checkbox':
+                        html += '<div class="radio-group" id="' + fieldId + '">';
+                        var coptions = fieldOptions[field.id] || [];
+                        for (var j = 0; j < coptions.length; j++) {
+                            html += '<label><input type="checkbox" name="' + field.field_name + '[]" value="' + coptions[j].value + '"> ' + coptions[j].label + '</label>';
+                        }
+                        html += '</div>';
+                        break;
+                    default:
+                        html += '<input type="text" id="' + fieldId + '" name="' + field.field_name + '" placeholder="请输入' + field.field_label + '">';
+                }
+                
+                html += '<div class="error-message">请填写' + field.field_label + '</div>';
+                html += '</div>';
+            }
+            
+            container.innerHTML = html;
+            
+            // 添加输入监听，更新进度条和实时验证
+            var inputs = container.querySelectorAll('input, select, textarea');
+            inputs.forEach(function(input) {
+                input.addEventListener('input', function() {
+                    updateProgress();
+                    validateField(input);
+                });
+                input.addEventListener('change', function() {
+                    updateProgress();
+                    validateField(input);
+                });
+            });
+        }
+
+        function handleSelectChange(selectElement, fieldName) {
+            var selectedValue = selectElement.value;
+            var fieldId = selectElement.id;
+            var extraDiv = document.getElementById(fieldId + '_extra');
+            var extraInput = document.getElementById(fieldId + '_extra_input');
+            
+            // 招聘渠道字段特殊处理
+            if (fieldName === 'source_channel') {
+                if (selectedValue === '内部介绍') {
+                    extraDiv.style.display = 'block';
+                    extraInput.placeholder = '请输入推荐人姓名';
+                    extraInput.required = true;
+                } else if (selectedValue === '其他') {
+                    extraDiv.style.display = 'block';
+                    extraInput.placeholder = '请说明具体来源';
+                    extraInput.required = true;
+                } else {
+                    extraDiv.style.display = 'none';
+                    extraInput.value = '';
+                    extraInput.required = false;
+                }
+            }
+        }
+
+        function updateProgress() {
+            var totalFields = 0;
+            var filledFields = 0;
+            
+            // 检查岗位选择
+            if (document.getElementById('position').value) {
+                totalFields++;
+                filledFields++;
+            } else {
+                totalFields++;
+            }
+            
+            // 检查动态字段
+            if (currentFields.length > 0) {
+                currentFields.forEach(function(field) {
+                    if (field.is_required) {
+                        totalFields++;
+                        var element = document.getElementById('field_' + field.id);
+                        if (element) {
+                            if (field.field_type === 'radio') {
+                                var checked = document.querySelector('input[name="' + field.field_name + '"]:checked');
+                                if (checked) filledFields++;
+                            } else if (element.value.trim()) {
+                                filledFields++;
+                            }
+                        }
+                    }
+                });
+            }
+            
+            var percentage = totalFields > 0 ? Math.round((filledFields / totalFields) * 100) : 0;
+            document.getElementById('progressFill').style.width = percentage + '%';
+        }
+
+        function validateField(input) {
+            var fieldGroup = input.closest('.form-group');
+            if (!fieldGroup) return;
+            
+            var fieldId = fieldGroup.getAttribute('data-field-id');
+            if (!fieldId) return;
+            
+            var field = currentFields.find(function(f) { return f.id == fieldId; });
+            if (!field) return;
+            
+            var isFieldValid = false;
+            var errorMessage = '';
+            
+            if (field.field_type === 'radio') {
+                var checked = document.querySelector('input[name="' + field.field_name + '"]:checked');
+                isFieldValid = !!checked;
+                if (!isFieldValid && field.is_required) {
+                    errorMessage = '请选择' + field.field_label;
+                }
+            } else if (field.field_type === 'checkbox') {
+                // 复选框通常不是必填项，除非特别指定
+                isFieldValid = true;
+            } else {
+                var value = input.value.trim();
+                isFieldValid = value !== '';
+                
+                // 字段特定验证
+                if (isFieldValid) {
+                    switch (field.field_name) {
+                        case 'phone':
+                            // 中国大陆手机号验证
+                            if (!/^1[3-9]\d{9}$/.test(value)) {
+                                isFieldValid = false;
+                                errorMessage = '请输入正确的手机号码（11位数字）';
+                            }
+                            break;
+                        case 'age':
+                            var age = parseInt(value);
+                            if (isNaN(age) || age < 16 || age > 65) {
+                                isFieldValid = false;
+                                errorMessage = '请输入有效的年龄（16-65岁）';
+                            }
+                            break;
+                        case 'name':
+                            if (value.length < 2 || value.length > 20) {
+                                isFieldValid = false;
+                                errorMessage = '姓名长度应在2-20个字符之间';
+                            }
+                            break;
+                    }
+                } else if (field.is_required) {
+                    errorMessage = '请填写' + field.field_label;
+                }
+            }
+            
+            if (field.is_required && !isFieldValid) {
+                fieldGroup.classList.add('error');
+                var errorElement = fieldGroup.querySelector('.error-message');
+                if (errorElement) {
+                    errorElement.textContent = errorMessage || '请填写' + field.field_label;
+                }
+            } else {
+                fieldGroup.classList.remove('error');
+                var errorElement = fieldGroup.querySelector('.error-message');
+                if (errorElement) {
+                    errorElement.textContent = '请填写' + field.field_label;
+                }
+            }
+        }
+
+        function validateForm() {
+            var isValid = true;
+            var firstError = null;
+            
+            // 验证岗位选择
+            var position = document.getElementById('position');
+            if (!position.value) {
+                position.closest('.form-group').classList.add('error');
+                isValid = false;
+                if (!firstError) firstError = position;
+                alert('请选择应聘岗位');
+                return false;
+            } else {
+                position.closest('.form-group').classList.remove('error');
+            }
+            
+            // 验证表单字段是否已加载
+            if (currentFields.length === 0) {
+                alert('表单字段正在加载中，请稍候...');
+                return false;
+            }
+            
+            // 验证动态字段容器是否有内容
+            var container = document.getElementById('dynamicFieldsContainer');
+            if (!container || container.innerHTML.trim() === '') {
+                alert('表单字段正在加载中，请稍候...');
+                return false;
+            }
+            
+            // 验证动态字段
+            currentFields.forEach(function(field) {
+                var fieldGroup = document.querySelector('[data-field-id="' + field.id + '"]');
+                
+                // 如果字段组不存在，跳过验证
+                if (!fieldGroup) {
+                    console.warn('字段组不存在:', field.field_name);
+                    return;
+                }
+                
+                var isFieldValid = false;
+                
+                if (field.field_type === 'radio') {
+                    var checked = document.querySelector('input[name="' + field.field_name + '"]:checked');
+                    isFieldValid = !!checked;
+                    if (!isFieldValid && field.is_required) {
+                        fieldGroup.classList.add('error');
+                        isValid = false;
+                        if (!firstError) firstError = fieldGroup.querySelector('input');
+                    } else {
+                        fieldGroup.classList.remove('error');
+                    }
+                } else if (field.field_type === 'checkbox') {
+                    // 复选框通常不是必填项
+                    fieldGroup.classList.remove('error');
+                } else {
+                    var element = document.getElementById('field_' + field.id);
+                    if (element) {
+                        var value = element.value.trim();
+                        isFieldValid = value !== '';
+                        
+                        // 字段特定验证
+                        if (isFieldValid) {
+                            switch (field.field_name) {
+                                case 'phone':
+                                    // 中国大陆手机号验证
+                                    if (!/^1[3-9]\d{9}$/.test(value)) {
+                                        isFieldValid = false;
+                                        var errorElement = fieldGroup.querySelector('.error-message');
+                                        if (errorElement) {
+                                            errorElement.textContent = '请输入正确的手机号码（11位数字）';
+                                        }
+                                    }
+                                    break;
+                                case 'age':
+                                    var age = parseInt(value);
+                                    if (isNaN(age) || age < 16 || age > 65) {
+                                        isFieldValid = false;
+                                        var errorElement = fieldGroup.querySelector('.error-message');
+                                        if (errorElement) {
+                                            errorElement.textContent = '请输入有效的年龄（16-65岁）';
+                                        }
+                                    }
+                                    break;
+                                case 'name':
+                                    if (value.length < 2 || value.length > 20) {
+                                        isFieldValid = false;
+                                        var errorElement = fieldGroup.querySelector('.error-message');
+                                        if (errorElement) {
+                                            errorElement.textContent = '姓名长度应在2-20个字符之间';
+                                        }
+                                    }
+                                    break;
+                            }
+                        } else if (field.is_required) {
+                            var errorElement = fieldGroup.querySelector('.error-message');
+                            if (errorElement) {
+                                errorElement.textContent = '请填写' + field.field_label;
+                            }
+                        }
+                        
+                        if ((!isFieldValid && field.is_required) || (!isFieldValid && field.field_name === 'phone')) {
+                            fieldGroup.classList.add('error');
+                            isValid = false;
+                            if (!firstError) firstError = element;
+                        } else {
+                            fieldGroup.classList.remove('error');
+                        }
+                    }
+                }
+            });
+            
+            // 验证工作经历（如果存在工作经历卡片）
+            if (experienceCards.length > 0) {
+                var validExperiences = experienceCards.filter(function(card) {
+                    return card.company && card.position && card.startDate && card.responsibilities &&
+                           (card.isCurrent || card.endDate);
+                });
+                
+                if (validExperiences.length === 0) {
+                    alert('请至少完成一条工作经历的填写（公司名称、职位、入离职时间、工作内容均为必填）');
+                    // 滚动到工作经历区域
+                    var workSection = document.getElementById('workExperienceSection');
+                    if (workSection) {
+                        workSection.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    }
+                    isValid = false;
+                } else if (validExperiences.length !== experienceCards.length) {
+                    // 有未完成的卡片
+                    alert('您有 ' + (experienceCards.length - validExperiences.length) + ' 条工作经历未填写完整，请完成或删除');
+                    var workSection = document.getElementById('workExperienceSection');
+                    if (workSection) {
+                        workSection.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    }
+                    isValid = false;
+                }
+            }
+            
+            if (firstError && isValid) {
+                firstError.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            }
+            
+            return isValid;
+        }
+
+        // ========== 工作经历卡片管理功能 ==========
+        var experienceCards = [];
+        var editingCardId = null;
+
+        // 添加工作经历卡片
+        function addExperienceCard() {
+            var cardId = Date.now();
+            var card = {
+                id: cardId,
+                company: '',
+                position: '',
+                startDate: '',
+                endDate: '',
+                isCurrent: false,
+                responsibilities: '',
+                leaveReason: ''
+            };
+            experienceCards.push(card);
+            renderExperienceCards();
+            editExperienceCard(cardId);
+        }
+
+        // 渲染工作经历卡片
+        function renderExperienceCards() {
+            var container = document.getElementById('experienceCardsContainer');
+            if (experienceCards.length === 0) {
+                container.innerHTML = '<p style="color: #999; text-align: center; padding: 20px;">暂无工作经历，点击下方按钮添加</p>';
+                return;
+            }
+
+            var html = '';
+            experienceCards.forEach(function(card, index) {
+                var isEditing = editingCardId === card.id;
+                
+                html += '<div class="experience-card' + (isEditing ? ' editing' : '') + '" data-card-id="' + card.id + '">';
+                html += '<div class="card-header">';
+                html += '<div class="card-title">工作经历 #' + (index + 1) + '</div>';
+                html += '<div class="card-actions">';
+                
+                if (isEditing) {
+                    html += '<button type="button" class="card-btn card-btn-save" onclick="saveExperienceCard(' + card.id + ')">保存</button>';
+                    html += '<button type="button" class="card-btn card-btn-cancel" onclick="cancelEditExperienceCard()">取消</button>';
+                } else {
+                    html += '<button type="button" class="card-btn card-btn-edit" onclick="editExperienceCard(' + card.id + ')">编辑</button>';
+                    html += '<button type="button" class="card-btn card-btn-delete" onclick="deleteExperienceCard(' + card.id + ')">删除</button>';
+                }
+                
+                html += '</div></div>';
+                
+                if (isEditing) {
+                    // 编辑模式
+                    html += '<div class="card-content">';
+                    html += '<div class="form-group">';
+                    html += '<label>公司名称 *</label>';
+                    html += '<input type="text" id="exp_company_' + card.id + '" value="' + escapeHtml(card.company) + '" placeholder="请输入公司名称">';
+                    html += '</div>';
+                    html += '<div class="form-group">';
+                    html += '<label>职位 *</label>';
+                    html += '<input type="text" id="exp_position_' + card.id + '" value="' + escapeHtml(card.position) + '" placeholder="请输入职位">';
+                    html += '</div>';
+                    html += '<div class="form-group full-width">';
+                    html += '<label>工作时间 *</label>';
+                    html += '<div class="date-range">';
+                    html += '<input type="date" id="exp_startDate_' + card.id + '" value="' + card.startDate + '">';
+                    html += '<span>至</span>';
+                    html += '<input type="date" id="exp_endDate_' + card.id + '" value="' + card.endDate + '"' + (card.isCurrent ? ' disabled' : '') + '>';
+                    html += '</div>';
+                    html += '<label class="checkbox-label" style="margin-top: 8px;">';
+                    html += '<input type="checkbox" id="exp_isCurrent_' + card.id + '"' + (card.isCurrent ? ' checked' : '') + ' onchange="toggleCurrentJob(' + card.id + ')">';
+                    html += '<span>至今在职</span>';
+                    html += '</label>';
+                    html += '</div>';
+                    html += '<div class="form-group full-width">';
+                    html += '<label>主要工作内容</label>';
+                    html += '<textarea id="exp_responsibilities_' + card.id + '" rows="3" placeholder="请描述您的主要工作职责和内容">' + escapeHtml(card.responsibilities) + '</textarea>';
+                    html += '</div>';
+                    html += '<div class="form-group">';
+                    html += '<label>离职原因 *</label>';
+                    html += '<input type="text" id="exp_leaveReason_' + card.id + '" value="' + escapeHtml(card.leaveReason) + '" placeholder="请输入离职原因" required>';
+                    html += '<div class="error-message">请填写离职原因</div>';
+                    html += '</div>';
+                    html += '</div>';
+                } else {
+                    // 显示模式
+                    html += '<div class="experience-display">';
+                    html += '<div class="display-item">';
+                    html += '<div class="display-label">公司名称</div>';
+                    html += '<div class="display-value">' + (card.company || '<span style="color: #999;">未填写</span>') + '</div>';
+                    html += '</div>';
+                    html += '<div class="display-item">';
+                    html += '<div class="display-label">职位</div>';
+                    html += '<div class="display-value">' + (card.position || '<span style="color: #999;">未填写</span>') + '</div>';
+                    html += '</div>';
+                    html += '<div class="display-item">';
+                    html += '<div class="display-label">工作时间</div>';
+                    html += '<div class="display-value">' + formatDateRange(card.startDate, card.endDate, card.isCurrent) + '</div>';
+                    html += '</div>';
+                    html += '<div class="display-item">';
+                    html += '<div class="display-label">离职原因</div>';
+                    html += '<div class="display-value">' + (card.leaveReason || '<span style="color: #999;">-</span>') + '</div>';
+                    html += '</div>';
+                    if (card.responsibilities) {
+                        html += '<div class="display-item full-width">';
+                        html += '<div class="display-label">主要工作内容</div>';
+                        html += '<div class="display-value">' + escapeHtml(card.responsibilities) + '</div>';
+                        html += '</div>';
+                    }
+                    html += '</div>';
+                }
+                
+                html += '</div>';
+            });
+            
+            container.innerHTML = html;
+        }
+
+        // HTML转义函数
+        function escapeHtml(text) {
+            if (!text) return '';
+            var div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        // 格式化日期范围
+        function formatDateRange(startDate, endDate, isCurrent) {
+            if (!startDate) return '<span style="color: #999;">未填写</span>';
+            var start = new Date(startDate);
+            var startStr = start.getFullYear() + '.' + String(start.getMonth() + 1).padStart(2, '0');
+            
+            if (isCurrent) {
+                return startStr + ' - 至今';
+            } else if (endDate) {
+                var end = new Date(endDate);
+                var endStr = end.getFullYear() + '.' + String(end.getMonth() + 1).padStart(2, '0');
+                return startStr + ' - ' + endStr;
+            } else {
+                return startStr + ' - 至今';
+            }
+        }
+
+        // 切换"至今在职"选项
+        function toggleCurrentJob(cardId) {
+            var isCurrent = document.getElementById('exp_isCurrent_' + cardId).checked;
+            var endDateInput = document.getElementById('exp_endDate_' + cardId);
+            endDateInput.disabled = isCurrent;
+            if (isCurrent) {
+                endDateInput.value = '';
+            }
+        }
+
+        // 编辑工作经历卡片
+        function editExperienceCard(cardId) {
+            editingCardId = cardId;
+            renderExperienceCards();
+        }
+
+        // 保存工作经历卡片
+        function saveExperienceCard(cardId) {
+            var card = experienceCards.find(function(c) { return c.id === cardId; });
+            if (!card) return;
+
+            var company = document.getElementById('exp_company_' + cardId).value.trim();
+            var position = document.getElementById('exp_position_' + cardId).value.trim();
+            var startDate = document.getElementById('exp_startDate_' + cardId).value;
+            var endDate = document.getElementById('exp_endDate_' + cardId).value;
+            var isCurrent = document.getElementById('exp_isCurrent_' + cardId).checked;
+            var responsibilities = document.getElementById('exp_responsibilities_' + cardId).value.trim();
+            var leaveReason = document.getElementById('exp_leaveReason_' + cardId).value.trim();
+
+            // 验证必填字段
+            if (!company) {
+                alert('请输入公司名称');
+                document.getElementById('exp_company_' + cardId).focus();
+                return;
+            }
+            if (!position) {
+                alert('请输入职位');
+                document.getElementById('exp_position_' + cardId).focus();
+                return;
+            }
+            if (!startDate) {
+                alert('请选择入职日期');
+                document.getElementById('exp_startDate_' + cardId).focus();
+                return;
+            }
+            // 验证离职日期（如果不是至今在职）
+            if (!isCurrent && !endDate) {
+                alert('请选择离职日期，或勾选"至今在职"');
+                document.getElementById('exp_endDate_' + cardId).focus();
+                return;
+            }
+            // 验证工作内容
+            if (!responsibilities) {
+                alert('请填写主要工作内容');
+                document.getElementById('exp_responsibilities_' + cardId).focus();
+                return;
+            }
+
+            // 更新卡片数据
+            card.company = company;
+            card.position = position;
+            card.startDate = startDate;
+            card.endDate = endDate;
+            card.isCurrent = isCurrent;
+            card.responsibilities = responsibilities;
+            card.leaveReason = leaveReason;
+
+            editingCardId = null;
+            renderExperienceCards();
+        }
+
+        // 取消编辑
+        function cancelEditExperienceCard() {
+            // 如果是新添加的卡片且未保存任何数据，则删除它
+            var card = experienceCards.find(function(c) { return c.id === editingCardId; });
+            if (card && !card.company && !card.position) {
+                deleteExperienceCard(editingCardId);
+                return;
+            }
+            editingCardId = null;
+            renderExperienceCards();
+        }
+
+        // 删除工作经历卡片
+        function deleteExperienceCard(cardId) {
+            if (!confirm('确定要删除这条工作经历吗？')) return;
+            experienceCards = experienceCards.filter(function(c) { return c.id !== cardId; });
+            if (editingCardId === cardId) {
+                editingCardId = null;
+            }
+            renderExperienceCards();
+        }
+
+        // 获取工作经历数据（用于表单提交）
+        function getWorkExperienceData() {
+            return experienceCards.filter(function(card) {
+                return card.company && card.position;
+            });
+        }
+
+        function collectFormData() {
+            var formData = {
+                position: document.getElementById('position').value,
+                fields: {}
+            };
+            
+            // 添加工作经历数据
+            var workExperience = getWorkExperienceData();
+            if (workExperience.length > 0) {
+                formData.fields.work_experience = workExperience;
+            }
+            
+            console.log('收集表单数据，当前字段数:', currentFields.length);
+            
+            currentFields.forEach(function(field) {
+                var fieldValue = '';
+                
+                if (field.field_type === 'radio') {
+                    var checked = document.querySelector('input[name="' + field.field_name + '"]:checked');
+                    fieldValue = checked ? checked.value : '';
+                } else if (field.field_type === 'checkbox') {
+                    var checkboxes = document.querySelectorAll('input[name="' + field.field_name + '[]"]:checked');
+                    var values = [];
+                    checkboxes.forEach(function(cb) {
+                        values.push(cb.value);
+                    });
+                    fieldValue = values.join(', ');
+                } else {
+                    var element = document.getElementById('field_' + field.id);
+                    fieldValue = element ? element.value : '';
+                    
+                    // 收集补充信息字段（如果有）
+                    var extraInput = document.getElementById('field_' + field.id + '_extra_input');
+                    if (extraInput && extraInput.value.trim()) {
+                        formData.fields[field.field_name + '_extra'] = extraInput.value.trim();
+                    }
+                }
+                
+                formData.fields[field.field_name] = fieldValue;
+                
+                // 调试日志
+                if (field.field_name === 'name' || field.field_name === 'phone') {
+                    console.log('字段收集:', field.field_name, '=', fieldValue, '(ID: field_' + field.id + ')');
+                }
+            });
+            
+            return formData;
+        }
+
+        function showError(message) {
+            var container = document.getElementById('errorContainer');
+            container.innerHTML = '<div class="alert alert-error">' + message + '</div>';
+            container.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+
+        function showSuccessOverlay(title, message) {
+            document.getElementById('successTitle').textContent = title;
+            document.getElementById('successMessage').textContent = message;
+            document.getElementById('successOverlay').classList.add('show');
+        }
+
+        function hideSuccessOverlay() {
+            document.getElementById('successOverlay').classList.remove('show');
+        }
+
+        function showSuccessState(title, message) {
+            document.getElementById('loadingSpinner').style.display = 'none';
+            document.getElementById('successIcon').style.display = 'flex';
+            document.getElementById('successTitle').textContent = title;
+            document.getElementById('successMessage').textContent = message;
+        }
+
+        // 保存到本地存储（备用方案）
+        function saveToLocalStorage(formData) {
+            try {
+                var applications = JSON.parse(localStorage.getItem('applications') || '[]');
+                var application = {
+                    id: 'local_' + Date.now(),
+                    position: formData.position,
+                    fields: formData.fields,
+                    created_at: new Date().toISOString(),
+                    status: 'pending'
+                };
+                applications.push(application);
+                localStorage.setItem('applications', JSON.stringify(applications));
+                
+                // 同时保存当前申请信息，用于面试预约
+                localStorage.setItem('currentApplication', JSON.stringify(application));
+                
+                return application;
+            } catch (e) {
+                console.error('保存到本地存储失败:', e);
+                return null;
+            }
+        }
+
+        // 生成CSRF令牌
+        function generateCSRFToken() {
+            var token = Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
+            localStorage.setItem('csrf_token', token);
+            return token;
+        }
+
+        // 验证CSRF令牌
+        function validateCSRFToken(token) {
+            var storedToken = localStorage.getItem('csrf_token');
+            return token === storedToken;
+        }
+
+        // 清理输入数据，防止XSS攻击
+        function sanitizeInput(input) {
+            var div = document.createElement('div');
+            div.textContent = input;
+            return div.innerHTML;
+        }
+
+        // 提交表单
+        async function submitForm(e) {
+            e.preventDefault();
+            
+            // 验证表单
+            if (!validateForm()) {
+                showError('请填写所有必填项');
+                return;
+            }
+            
+            // 收集数据
+            var formData = collectFormData();
+            
+            // 清理数据，防止XSS攻击
+            for (var key in formData.fields) {
+                if (typeof formData.fields[key] === 'string') {
+                    formData.fields[key] = sanitizeInput(formData.fields[key]);
+                }
+            }
+            
+            // 生成CSRF令牌
+            var csrfToken = generateCSRFToken();
+            
+            // 显示加载状态
+            var submitBtn = document.getElementById('submitBtn');
+            var btnText = document.getElementById('btnText');
+            if (submitBtn) submitBtn.disabled = true;
+            if (btnText) btnText.textContent = '提交中...';
+            showSuccessOverlay('正在提交...', '请稍候，正在保存您的应聘信息');
+            
+            var savedApplication = null;
+            var dbError = null;
+            
+            // 尝试保存到数据库（最多重试3次）
+            if (initSupabase()) {
+                for (var attempt = 1; attempt <= 3; attempt++) {
+                    try {
+                        console.log('尝试保存到数据库 (尝试 ' + attempt + '/3)...');
+                        
+                        // 准备数据库记录 - 确保必填字段有值
+                        // 尝试多种可能的姓名字段名
+                        var nameValue = formData.fields.name || 
+                                       formData.fields.Name || 
+                                       formData.fields['姓名'] || 
+                                       formData.fields['name'] || '';
+                        
+                        // 尝试多种可能的电话字段名
+                        var phoneValue = formData.fields.phone || 
+                                        formData.fields.Phone || 
+                                        formData.fields['电话'] || 
+                                        formData.fields['联系电话'] || 
+                                        formData.fields['phone'] || '';
+                        
+                        // 如果还是为空，尝试从表单元素直接获取
+                        if (!nameValue) {
+                            var nameInput = document.querySelector('input[name="name"], input[id*="name"], input[placeholder*="姓名"]');
+                            if (nameInput) nameValue = nameInput.value;
+                        }
+                        if (!phoneValue) {
+                            var phoneInput = document.querySelector('input[name="phone"], input[id*="phone"], input[placeholder*="电话"]');
+                            if (phoneInput) phoneValue = phoneInput.value;
+                        }
+                        
+                        var dbRecord = {
+                            position: formData.position,
+                            name: nameValue || '未填写',
+                            phone: phoneValue || '未填写'
+                        };
+                        
+                        // 提取其他关键字段
+                        if (formData.fields.age) dbRecord.age = parseInt(formData.fields.age) || null;
+                        if (formData.fields.gender) dbRecord.gender = formData.fields.gender;
+                        if (formData.fields.education) dbRecord.education = formData.fields.education;
+                        if (formData.fields.experience) dbRecord.experience = formData.fields.experience;
+                        if (formData.fields.marital_status) dbRecord.marital_status = formData.fields.marital_status;
+                        if (formData.fields.job_type) dbRecord.job_type = formData.fields.job_type;
+                        
+                        // 保存所有字段为JSON（包含所有动态字段）
+                        if (formData.fields) dbRecord.form_data = formData.fields;
+                        
+                        // 记录状态
+                        dbRecord.status = 'pending';
+                        
+                        // 调试日志：检查表单数据
+                        console.log('表单数据:', formData);
+                        console.log('所有字段:', Object.keys(formData.fields));
+                        console.log('姓名字段值 (name):', formData.fields.name);
+                        console.log('姓名字段值 (Name):', formData.fields.Name);
+                        console.log('电话字段值 (phone):', formData.fields.phone);
+                        console.log('电话字段值 (Phone):', formData.fields.Phone);
+                        // 查找工种相关字段
+                        for (var key in formData.fields) {
+                            if (key.toLowerCase().includes('job') || key.toLowerCase().includes('工种') || key.toLowerCase().includes('type')) {
+                                console.log('工种相关字段:', key, '=', formData.fields[key]);
+                            }
+                        }
+                        console.log('最终姓名:', nameValue);
+                        console.log('最终电话:', phoneValue);
+                        console.log('数据库记录:', dbRecord);
+                        
+                        var result = await supabase
+                            .from('applications')
+                            .insert([dbRecord])
+                            .select();
+                        
+                        if (result.error) {
+                            console.error('数据库保存失败 (尝试 ' + attempt + '):', result.error);
+                            dbError = result.error;
+                            // 等待后重试
+                            if (attempt < 3) {
+                                await new Promise(resolve => setTimeout(resolve, 1000));
+                                continue;
+                            }
+                        } else if (result.data && result.data.length > 0) {
+                            savedApplication = result.data[0];
+                            console.log('✅ 数据库保存成功:', savedApplication);
+                            break;
+                        }
+                    } catch (error) {
+                        console.error('数据库保存异常 (尝试 ' + attempt + '):', error);
+                        dbError = error;
+                        // 等待后重试
+                        if (attempt < 3) {
+                            await new Promise(resolve => setTimeout(resolve, 1000));
+                            continue;
+                        }
+                    }
+                }
+                
+                if (!savedApplication) {
+                    console.error('所有数据库尝试均失败:', dbError);
+                }
+            } else {
+                console.log('Supabase未初始化');
+                dbError = new Error('Supabase客户端未初始化');
+            }
+            
+            if (savedApplication) {
+                // 保存成功
+                applicationId = savedApplication.id;
+                
+                // 保存个人信息到 localStorage，用于面试预约页面预填充
+                localStorage.setItem('candidateProfile', JSON.stringify({
+                    name: formData.fields.name || '',
+                    phone: formData.fields.phone || '',
+                    position: formData.position
+                }));
+                
+                // 保存数据同步状态日志
+                var syncLog = {
+                    timestamp: new Date().toISOString(),
+                    action: 'application_submitted',
+                    status: 'server',
+                    applicationId: savedApplication.id,
+                    data: {
+                        name: formData.fields.name,
+                        phone: formData.fields.phone,
+                        position: formData.position
+                    }
+                };
+                
+                // 保存到本地存储日志
+                var syncLogs = JSON.parse(localStorage.getItem('syncLogs') || '[]');
+                syncLogs.push(syncLog);
+                if (syncLogs.length > 50) {
+                    syncLogs = syncLogs.slice(-50); // 只保留最近50条
+                }
+                localStorage.setItem('syncLogs', JSON.stringify(syncLogs));
+                
+                console.log('数据同步日志:', syncLog);
+                
+                showSuccessState('提交成功！', '正在跳转到面试预约页面...');
+                
+                // 标记流程状态 - 应聘信息已填写完成
+                var nameValue = '';
+                var nameElements = [
+                    document.querySelector('input[name="name"]'),
+                    document.querySelector('input[id*="name"]'),
+                    document.querySelector('input[placeholder*="姓名"]'),
+                    document.querySelector('input[id="field_1"]')
+                ];
+                for (var i = 0; i < nameElements.length; i++) {
+                    var element = nameElements[i];
+                    if (element && element.value.trim()) {
+                        nameValue = element.value.trim();
+                        break;
+                    }
+                }
+                
+                // 保存流程状态到 localStorage
+                localStorage.setItem('currentApplication', JSON.stringify({
+                    id: applicationId,
+                    name: nameValue,
+                    phone: formData.fields.phone || '',
+                    position: formData.position,
+                    completedAt: new Date().toISOString()
+                }));
+                localStorage.setItem('candidateProfile', JSON.stringify({
+                    name: nameValue,
+                    phone: formData.fields.phone || '',
+                    position: formData.position
+                }));
+                
+                // 延迟跳转到面试预约页面
+                setTimeout(function() {
+                    var redirectUrl = 'booking.html';
+                    if (applicationId) {
+                        redirectUrl += '?application_id=' + encodeURIComponent(applicationId);
+                        redirectUrl += '&name=' + encodeURIComponent(nameValue || '');
+                        redirectUrl += '&phone=' + encodeURIComponent(formData.fields.phone || '');
+                        redirectUrl += '&position=' + encodeURIComponent(formData.position);
+                    }
+                    console.log('跳转到面试预约页面:', redirectUrl);
+                    window.location.href = redirectUrl;
+                }, 1500);
+            } else {
+                // 保存失败 - 显示详细错误信息
+                hideSuccessOverlay();
+                var submitBtn = document.getElementById('submitBtn');
+                var btnText = document.getElementById('btnText');
+                if (submitBtn) submitBtn.disabled = false;
+                if (btnText) btnText.textContent = '提交应聘信息';
+                
+                var errorMsg = '保存失败，请检查网络连接后重试';
+                if (dbError) {
+                    if (dbError.message && dbError.message.includes('network')) {
+                        errorMsg = '网络连接失败，请检查网络后重试';
+                    } else if (dbError.code === '23505') {
+                        errorMsg = '数据重复，请稍后再试';
+                    } else if (dbError.code === '42501') {
+                        errorMsg = '权限不足，请联系管理员';
+                    }
+                    console.error('数据库错误详情:', dbError);
+                }
+                showError(errorMsg);
+            }
+        }
+
+        // 绑定表单提交事件
+        document.getElementById('applicationForm').addEventListener('submit', submitForm);
+
+        // 页面加载时初始化
+        document.addEventListener('DOMContentLoaded', async function() {
+            // 先加载 Supabase SDK
+            try {
+                await loadSupabaseSDK();
+                initSupabase();
+                console.log('✅ Supabase 初始化完成');
+            } catch (e) {
+                console.error('❌ Supabase 初始化失败:', e);
+            }
+            
+            updateProgress();
+            
+            // 检查是否有之前的申请信息
+            var savedApplication = localStorage.getItem('currentApplication');
+            if (savedApplication) {
+                console.log('发现之前的申请信息:', JSON.parse(savedApplication));
+            }
+        });
+    </script>
+</body>
+</html>

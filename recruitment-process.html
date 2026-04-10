@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>招聘流程管理 - 义齿工厂招聘系统</title>
+    <!-- 本地开发使用相对路径，GitHub Pages 会自动处理 -->
+    <!-- <base href="https://as-2026learning.github.io/dental_recruitment_systemV1.0/"> -->
+    <!-- 【优化】关键脚本优先加载，非关键脚本使用defer -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="js/config.js?v=13"></script>
+    <script src="js/config/field-config.js?v=13"></script>
+    <script src="js/utils/DataManager.js?v=13"></script>
+    <script src="js/components/DynamicTable.js?v=13"></script>
+    <script src="js/recruitment-process.js?v=13"></script>
+    <!-- 非关键脚本延迟加载 -->
+    <script src="https://cdn.sheetjs.com/xlsx-0.20.0/package/dist/xlsx.full.min.js" defer></script>
+    <script src="js/utils/ExportManager.js?v=13" defer></script>
+    <script src="js/utils/DataQualityChecker.js?v=13" defer></script>
+    <script src="js/utils/InterviewDateSyncService.js?v=13" defer></script>
+    <script src="js/utils/InterviewDateHistoryService.js?v=13" defer></script>
+    <script src="js/components/DetailModal.js?v=13" defer></script>
+    <script src="js/components/FirstInterviewModal.js?v=13" defer></script>
+    <script src="js/components/SecondInterviewModal.js?v=13" defer></script>
+    <script src="js/components/OnboardingModal.js?v=13" defer></script>
+    <link rel="stylesheet" href="css/recruitment-process.css?v=12">
+</head>
+<body>
+    <!-- 登录检查 - 必须在页面内容加载前执行 -->
+    <script>
+        (function() {
+            // 严格验证登录状态
+            const isLoggedIn = localStorage.getItem('adminLoggedIn') === 'true';
+            const token = localStorage.getItem('adminToken');
+            const currentUserStr = localStorage.getItem('currentUser');
+            
+            // 必须同时满足三个条件才算已登录
+            if (!isLoggedIn || !token || !currentUserStr) {
+                // 清除可能不完整的登录状态
+                localStorage.removeItem('adminToken');
+                localStorage.removeItem('adminLoggedIn');
+                localStorage.removeItem('currentUser');
+                // 跳转到登录页
+                window.location.replace('login-new.html');
+                return;
+            }
+            
+            // 验证用户信息格式
+            try {
+                const currentUser = JSON.parse(currentUserStr);
+                if (!currentUser || !currentUser.username || !currentUser.role) {
+                    throw new Error('用户信息不完整');
+                }
+            } catch (e) {
+                // 用户信息格式错误
+                localStorage.removeItem('adminToken');
+                localStorage.removeItem('adminLoggedIn');
+                localStorage.removeItem('currentUser');
+                window.location.replace('login-new.html');
+                return;
+            }
+        })();
+    </script>
+    <div class="container">
+        <!-- 头部 -->
+        <header class="page-header">
+            <h1>📋 招聘流程管理</h1>
+            <div class="header-nav">
+                <a href="integrated-applications.html" class="nav-link">📋 应聘信息</a>
+                <a href="admin-standalone.html" class="nav-link">📅 预约管理</a>
+                <a href="recruitment-process.html" class="nav-link active">🔄 流程管理</a>
+                <a href="recruitment-dashboard.html" class="nav-link">📊 数据看板</a>
+                <a href="settings.html" class="nav-link">⚙️ 系统设置</a>
+                <a href="permissions.html" class="nav-link">🔐 权限管理</a>
+                <a href="index.html" class="nav-link">🏠 首页</a>
+                <a href="#" onclick="logout()" class="nav-link logout">🚪 退出</a>
+            </div>
+        </header>
+
+        <!-- 统计卡片 -->
+        <section class="stats-section">
+            <div class="stats-cards" id="statsCards">
+                <div class="stat-card loading">加载中...</div>
+            </div>
+        </section>
+
+        <!-- 筛选栏 -->
+        <section class="filter-section">
+            <div class="filter-row">
+                <select id="filterPosition" class="filter-select">
+                    <option value="">全部岗位</option>
+                </select>
+                <select id="filterJobType" class="filter-select">
+                    <option value="">全部工种</option>
+                </select>
+                <select id="filterStage" class="filter-select">
+                    <option value="">全部环节</option>
+                    <option value="first_interview">初试</option>
+                    <option value="second_interview">复试</option>
+                    <option value="hired">录用</option>
+                    <option value="awaiting_onboard">待报到</option>
+                    <option value="not_onboarded">未报到</option>
+                    <option value="onboarded">已报到</option>
+                </select>
+                <select id="filterStatus" class="filter-select">
+                    <option value="">全部状态</option>
+                    <option value="pending">待处理</option>
+                    <option value="pass">通过</option>
+                    <option value="reject">不通过</option>
+                </select>
+                <!-- 面试日期范围筛选 -->
+                <div class="date-range-filter">
+                    <span class="date-range-label">面试日期</span>
+                    <input type="date" id="filterStartDate" class="filter-input date-input" placeholder="起始日期">
+                    <span class="date-range-separator">-</span>
+                    <input type="date" id="filterEndDate" class="filter-input date-input" placeholder="结束日期">
+                    <button id="btnClearDateRange" class="btn-clear-date" title="清除日期筛选" style="display:none;">✕</button>
+                </div>
+                <select id="filterTimeSlot" class="filter-select">
+                    <option value="">全部时段</option>
+                    <option value="slot_1">上午场 09:00-10:00</option>
+                    <option value="slot_2">上午场 10:00-10:30</option>
+                    <option value="slot_3">下午场 13:00-14:00</option>
+                    <option value="slot_4">下午场 14:00-15:00</option>
+                    <option value="slot_5">下午场 15:00-15:30</option>
+                </select>
+                <input type="text" id="filterSearch" class="filter-input" placeholder="搜索姓名或电话">
+                <button id="btnSearch" class="btn-search">🔍 搜索</button>
+                <button id="btnReset" class="btn-reset">重置</button>
+            </div>
+        </section>
+
+        <!-- 工具栏 -->
+        <section class="toolbar-section">
+            <div class="toolbar-left">
+                <button id="btnExport" class="btn-export">📊 导出Excel</button>
+                <button id="btnPrint" class="btn-print">🖨️ 打印</button>
+                <button id="btnBatchDelete" class="btn-batch-delete" style="display:none;">🗑️ 批量删除</button>
+                <button id="btnForceSync" class="btn-sync">🔄 强制同步数据</button>
+                <button id="btnDiagnoseSync" class="btn-diagnose">🔍 数据诊断</button>
+                <button id="btnCleanupInvalid" class="btn-cleanup">🧹 清理无效数据</button>
+                <button id="btnDataQuality" class="btn-quality">📋 数据质量检查</button>
+            </div>
+            <div class="toolbar-right">
+                <button id="btnClearFilter" class="btn-clear-filter" style="display:none;">❌ 清除筛选</button>
+                <span id="totalCount">共 0 条记录</span>
+            </div>
+        </section>
+
+        <!-- 数据表格 -->
+        <section class="table-section">
+            <div id="tableContainer" class="table-container">
+                <div class="loading-message">正在加载数据...</div>
+            </div>
+        </section>
+
+        <!-- 分页 -->
+        <section class="pagination-section">
+            <div id="pagination" class="pagination">
+                <!-- 分页组件将在这里渲染 -->
+            </div>
+        </section>
+    </div>
+
+    <!-- 导航样式 -->
+    <style>
+        .header-nav {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+        
+        .nav-link {
+            padding: 8px 16px;
+            border-radius: 4px;
+            text-decoration: none;
+            color: #595959;
+            font-size: 14px;
+            transition: all 0.3s;
+            white-space: nowrap;
+        }
+        
+        .nav-link:hover {
+            background: #f5f5f5;
+            color: #1890ff;
+        }
+        
+        .nav-link.active {
+            background: #1890ff;
+            color: white;
+        }
+        
+        .nav-link.logout {
+            color: #ff4d4f;
+        }
+        
+        .nav-link.logout:hover {
+            background: #fff1f0;
+            color: #ff4d4f;
+        }
+    </style>
+
+    <!-- 退出登录功能 -->
+    <script>
+        function logout() {
+            if (confirm('确定要退出登录吗？')) {
+                // 清除登录状态
+                localStorage.removeItem('isLoggedIn');
+                localStorage.removeItem('currentUser');
+                localStorage.removeItem('userRole');
+                // 跳转到登录页
+                window.location.href = 'login-new.html';
+            }
+        }
+    </script>
+
+</body>
+</html>

@@ -1,0 +1,374 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>后台登录</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background: linear-gradient(135deg, #1890ff 0%, #096dd9 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+        .login-container {
+            background: white;
+            border-radius: 16px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            width: 100%;
+            max-width: 400px;
+            padding: 40px;
+        }
+        .login-header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        .login-header h1 {
+            font-size: 28px;
+            color: #333;
+            margin-bottom: 10px;
+        }
+        .login-header p {
+            color: #666;
+            font-size: 14px;
+        }
+        .form-group {
+            margin-bottom: 20px;
+        }
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            color: #333;
+            font-weight: 500;
+            font-size: 14px;
+        }
+        .form-group input {
+            width: 100%;
+            padding: 12px 15px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 14px;
+            transition: border-color 0.3s;
+        }
+        .form-group input:focus {
+            outline: none;
+            border-color: #1890ff;
+        }
+        .btn-login {
+            width: 100%;
+            padding: 14px;
+            background: linear-gradient(135deg, #1890ff 0%, #096dd9 100%);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.3s, box-shadow 0.3s;
+        }
+        .btn-login:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 20px rgba(24, 144, 255, 0.4);
+        }
+        .btn-login:disabled {
+            opacity: 0.7;
+            cursor: not-allowed;
+            transform: none;
+        }
+        .error-message {
+            background: #fff1f0;
+            color: #ff4d4f;
+            padding: 12px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            font-size: 14px;
+            display: none;
+            border: 1px solid #ffccc7;
+        }
+        .error-message.show {
+            display: block;
+        }
+        .login-footer {
+            text-align: center;
+            margin-top: 20px;
+            padding-top: 20px;
+            border-top: 1px solid #e0e0e0;
+        }
+        .login-footer a {
+            color: #1890ff;
+            text-decoration: none;
+            font-size: 14px;
+        }
+        .login-footer a:hover {
+            text-decoration: underline;
+        }
+        .loading {
+            display: inline-block;
+            width: 16px;
+            height: 16px;
+            border: 2px solid #ffffff;
+            border-top-color: transparent;
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+            margin-right: 8px;
+            vertical-align: middle;
+        }
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+        .info-box {
+            background: #e6f7ff;
+            border: 1px solid #91d5ff;
+            border-radius: 8px;
+            padding: 12px;
+            margin-bottom: 20px;
+            font-size: 13px;
+            color: #096dd9;
+        }
+    </style>
+</head>
+<body>
+    <div class="login-container">
+        <div class="login-header">
+            <h1>🔐 后台管理系统</h1>
+        </div>
+
+        <div class="info-box">
+            💡 首次使用？请联系管理员创建账号
+        </div>
+
+        <div class="error-message" id="errorMessage"></div>
+
+        <form id="loginForm">
+            <div class="form-group">
+                <label for="email">邮箱</label>
+                <input type="email" id="email" name="email" placeholder="请输入邮箱" required>
+            </div>
+            <div class="form-group">
+                <label for="password">密码</label>
+                <input type="password" id="password" name="password" placeholder="请输入密码" required>
+            </div>
+            <button type="submit" class="btn-login" id="loginBtn">
+                登录
+            </button>
+        </form>
+
+        <div class="login-footer">
+            <a href="candidate-form-complete.html">← 返回应聘页面</a>
+        </div>
+    </div>
+
+    <!-- Supabase SDK - 主 CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+    
+    <script>
+        // Supabase 配置
+        const SUPABASE_URL = 'https://dxrghlqnwfwpuxjvyisv.supabase.co';
+        const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImR4cmdobHFud2Z3cHV4anZ5aXN2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQ2ODYyMjAsImV4cCI6MjA5MDI2MjIyMH0.r6hDrTVZ1p_Qq6sHuLeBEo3SFqGEh0trwbRMXLWnrNQ';
+        
+        // 初始化 Supabase 客户端
+        let supabaseClient;
+        
+        function initSupabase() {
+            try {
+                if (typeof window.supabase !== 'undefined' && window.supabase.createClient) {
+                    supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+                    console.log('✅ Supabase 客户端初始化成功');
+                    return true;
+                }
+                return false;
+            } catch (e) {
+                console.error('❌ Supabase 初始化失败:', e);
+                return false;
+            }
+        }
+        
+        // 尝试初始化
+        if (!initSupabase()) {
+            // 主 CDN 失败，加载备用 CDN
+            console.log('⚠️ 主 CDN 加载失败，尝试备用 CDN...');
+            const script = document.createElement('script');
+            script.src = 'https://unpkg.com/@supabase/supabase-js@2/dist/umd/supabase.min.js';
+            script.onload = function() {
+                console.log('✅ 备用 CDN 加载成功');
+                if (initSupabase()) {
+                    // 重新绑定事件
+                    bindLoginEvent();
+                }
+            };
+            script.onerror = function() {
+                console.error('❌ 备用 CDN 也加载失败');
+                document.getElementById('errorMessage').textContent = '系统加载失败，请检查网络连接后刷新页面';
+                document.getElementById('errorMessage').classList.add('show');
+            };
+            document.head.appendChild(script);
+        }
+        
+        // 绑定登录事件
+        function bindLoginEvent() {
+            document.getElementById('loginForm').addEventListener('submit', async function(e) {
+                e.preventDefault();
+                
+                // 检查 supabaseClient 是否已初始化
+                if (!supabaseClient) {
+                    document.getElementById('errorMessage').textContent = '系统初始化中，请稍后再试';
+                    document.getElementById('errorMessage').classList.add('show');
+                    return;
+                }
+                
+                const email = document.getElementById('email').value.trim();
+                const password = document.getElementById('password').value;
+                const loginBtn = document.getElementById('loginBtn');
+                const errorMessage = document.getElementById('errorMessage');
+                
+                // 显示加载状态
+                loginBtn.disabled = true;
+                loginBtn.innerHTML = '<span class="loading"></span>登录中...';
+                errorMessage.classList.remove('show');
+                
+                try {
+                    // 使用 Supabase Auth 登录
+                    const { data, error } = await supabaseClient.auth.signInWithPassword({
+                        email: email,
+                        password: password
+                    });
+                    
+                    if (error) {
+                        throw error;
+                    }
+                    
+                    if (data.user) {
+                        // 获取用户角色信息 - 使用更可靠的方式
+                        let roleData = null;
+                        let userRole = 'operator'; // 默认角色
+                        
+                        console.log('正在获取用户角色，用户ID:', data.user.id);
+                        
+                        // 尝试多次获取角色信息
+                        for (let attempt = 1; attempt <= 3; attempt++) {
+                            try {
+                                console.log(`角色获取尝试 ${attempt}/3...`);
+                                
+                                // 不使用 .single()，避免 "JSON object requested, multiple (or no) rows returned" 错误
+                                const result = await supabaseClient
+                                    .from('user_roles')
+                                    .select('role, name')
+                                    .eq('user_id', data.user.id);
+                                
+                                console.log('角色查询结果:', result);
+                                
+                                if (result.error) {
+                                    console.warn(`尝试 ${attempt} 失败:`, result.error);
+                                    // 等待后重试
+                                    if (attempt < 3) {
+                                        await new Promise(resolve => setTimeout(resolve, 500));
+                                    }
+                                } else if (result.data && result.data.length > 0) {
+                                    roleData = result.data[0];
+                                    userRole = roleData.role;
+                                    console.log(`✅ 尝试 ${attempt} 成功，角色:`, userRole);
+                                    break; // 成功获取，退出循环
+                                } else {
+                                    console.warn(`尝试 ${attempt}: 未找到角色记录`);
+                                    // 等待后重试
+                                    if (attempt < 3) {
+                                        await new Promise(resolve => setTimeout(resolve, 500));
+                                    }
+                                }
+                            } catch (e) {
+                                console.warn(`尝试 ${attempt} 异常:`, e);
+                                if (attempt < 3) {
+                                    await new Promise(resolve => setTimeout(resolve, 500));
+                                }
+                            }
+                        }
+                        
+                        // 如果仍然无法获取角色，显示警告但允许登录
+                        if (!roleData) {
+                            console.error('❌ 无法从数据库获取角色信息，使用默认角色 operator');
+                            console.log('请检查 Supabase 中 user_roles 表是否有该用户的记录');
+                            console.log('用户ID:', data.user.id);
+                        }
+                        
+                        console.log('最终用户角色:', userRole);
+                        
+                        // 保存登录状态到 localStorage（兼容现有系统）
+                        localStorage.setItem('adminLoggedIn', 'true');
+                        localStorage.setItem('adminToken', data.session.access_token);
+                        localStorage.setItem('currentUser', JSON.stringify({
+                            username: data.user.email,
+                            name: roleData?.name || data.user.email,
+                            role: userRole,
+                            email: data.user.email,
+                            user_id: data.user.id
+                        }));
+                        
+                        console.log('✅ 登录成功:', data.user.email, '角色:', userRole);
+                        
+                        // 跳转到后台首页
+                        window.location.href = 'integrated-applications.html';
+                    }
+                } catch (error) {
+                    console.error('❌ 登录失败:', error);
+                    
+                    let errorMsg = '登录失败';
+                    if (error.message.includes('Invalid login credentials')) {
+                        errorMsg = '邮箱或密码错误';
+                    } else if (error.message.includes('Email not confirmed')) {
+                        errorMsg = '邮箱未验证，请检查邮件';
+                    } else {
+                        errorMsg = error.message;
+                    }
+                    
+                    errorMessage.textContent = errorMsg;
+                    errorMessage.classList.add('show');
+                    loginBtn.disabled = false;
+                    loginBtn.textContent = '登录';
+                }
+            });
+        }
+        
+        // 立即绑定事件（如果 Supabase 已加载）
+        if (typeof window.supabase !== 'undefined') {
+            bindLoginEvent();
+        }
+        
+        // 检查是否已登录（延迟检查，确保 Supabase 已初始化）
+        async function checkExistingSession() {
+            // 等待一小段时间确保 Supabase 完全初始化
+            await new Promise(resolve => setTimeout(resolve, 500));
+            
+            // 检查 supabaseClient 是否已初始化
+            if (!supabaseClient) {
+                console.log('⏳ Supabase 尚未初始化，跳过自动跳转');
+                return;
+            }
+            
+            try {
+                const { data: { session } } = await supabaseClient.auth.getSession();
+                if (session) {
+                    console.log('✅ 已有有效会话，自动跳转');
+                    window.location.replace('integrated-applications.html');
+                }
+            } catch (e) {
+                console.log('检查会话失败:', e);
+            }
+        }
+        
+        // 页面加载完成后检查
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', checkExistingSession);
+        } else {
+            checkExistingSession();
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,2922 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>应聘信息综合管理 - 义齿工厂招聘系统</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', sans-serif;
+            background: #f5f7fa;
+            color: #333;
+            line-height: 1.6;
+        }
+        
+        /* 头部样式 */
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 20px 0;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        
+        .header-content {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 0 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .header h1 {
+            font-size: 24px;
+            font-weight: 600;
+        }
+        
+        .header-nav {
+            display: flex;
+            gap: 20px;
+        }
+        
+        .header-nav a {
+            color: white;
+            text-decoration: none;
+            padding: 8px 16px;
+            border-radius: 6px;
+            transition: background 0.3s;
+        }
+        
+        .header-nav a:hover {
+            background: rgba(255,255,255,0.2);
+        }
+        
+        /* 统计卡片 */
+        .stats-container {
+            max-width: 1400px;
+            margin: 20px auto;
+            padding: 0 20px;
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+        }
+        
+        .stat-card {
+            background: white;
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+            transition: transform 0.3s, box-shadow 0.3s;
+        }
+        
+        .stat-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.12);
+        }
+        
+        .stat-card.clickable {
+            cursor: pointer;
+        }
+        
+        .stat-card.clickable:hover {
+            background: #f0f5ff;
+            border: 1px solid #1890ff;
+        }
+        
+        .stat-card.active {
+            background: #e6f7ff;
+            border: 2px solid #1890ff;
+        }
+        
+        .stat-value {
+            font-size: 32px;
+            font-weight: 700;
+            color: #667eea;
+            margin-bottom: 5px;
+        }
+        
+        .stat-label {
+            color: #666;
+            font-size: 14px;
+        }
+        
+        /* 主内容区 */
+        .main-container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        
+        /* 筛选栏 */
+        .filter-bar {
+            background: white;
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+            margin-bottom: 20px;
+        }
+        
+        .filter-row {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 15px;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+        
+        .filter-row:last-child {
+            margin-bottom: 0;
+        }
+        
+        .filter-group {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .filter-group label {
+            font-size: 14px;
+            color: #666;
+            white-space: nowrap;
+        }
+        
+        .filter-group select,
+        .filter-group input {
+            padding: 8px 12px;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            font-size: 14px;
+            min-width: 120px;
+        }
+        
+        .filter-group input[type="date"] {
+            min-width: 140px;
+        }
+        
+        .filter-group input[type="text"] {
+            min-width: 200px;
+        }
+        
+        .btn {
+            padding: 8px 16px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: all 0.3s;
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+        }
+        
+        .btn-primary {
+            background: #667eea;
+            color: white;
+        }
+        
+        .btn-primary:hover {
+            background: #5a6fd6;
+        }
+        
+        .btn-secondary {
+            background: #f0f0f0;
+            color: #666;
+        }
+        
+        .btn-secondary:hover {
+            background: #e0e0e0;
+        }
+        
+        .btn-success {
+            background: #52c41a;
+            color: white;
+        }
+        
+        .btn-success:hover {
+            background: #49ad18;
+        }
+        
+        /* 数据表格 */
+        .data-table-container {
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+            overflow: hidden;
+        }
+        
+        .table-toolbar {
+            padding: 15px 20px;
+            border-bottom: 1px solid #eee;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .table-info {
+            font-size: 14px;
+            color: #666;
+        }
+        
+        .table-actions {
+            display: flex;
+            gap: 10px;
+        }
+        
+        .data-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        
+        .data-table th,
+        .data-table td {
+            padding: 12px 15px;
+            text-align: left;
+            border-bottom: 1px solid #eee;
+        }
+        
+        .data-table th {
+            background: #f8f9fa;
+            font-weight: 600;
+            color: #333;
+            font-size: 14px;
+            white-space: nowrap;
+            cursor: pointer;
+            user-select: none;
+        }
+        
+        .data-table th:hover {
+            background: #e9ecef;
+        }
+        
+        .data-table th .sort-icon {
+            margin-left: 5px;
+            color: #999;
+        }
+        
+        .data-table th.sort-asc .sort-icon::after {
+            content: '↑';
+            color: #667eea;
+        }
+        
+        .data-table th.sort-desc .sort-icon::after {
+            content: '↓';
+            color: #667eea;
+        }
+        
+        .data-table tbody tr:hover {
+            background: #f8f9ff;
+        }
+        
+        .data-table td {
+            font-size: 14px;
+            color: #555;
+        }
+        
+        /* 状态标签 */
+        .status-tag {
+            display: inline-block;
+            padding: 4px 10px;
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: 500;
+        }
+        
+        .status-pending {
+            background: #fff7e6;
+            color: #fa8c16;
+        }
+        
+        .status-processed {
+            background: #f6ffed;
+            color: #52c41a;
+        }
+        
+        .status-rejected {
+            background: #fff1f0;
+            color: #f5222d;
+        }
+        
+        .booking-status-pending {
+            background: #e6f7ff;
+            color: #1890ff;
+        }
+        
+        .booking-status-confirmed {
+            background: #f6ffed;
+            color: #52c41a;
+        }
+        
+        .booking-status-cancelled {
+            background: #fff1f0;
+            color: #f5222d;
+        }
+        
+        .booking-status-none {
+            background: #f5f5f5;
+            color: #999;
+        }
+        
+        /* 操作按钮 */
+        .action-btns {
+            display: flex;
+            gap: 5px;
+        }
+        
+        .action-btn {
+            padding: 5px 10px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 12px;
+            transition: all 0.3s;
+        }
+        
+        .action-btn-view {
+            background: #e6f7ff;
+            color: #1890ff;
+        }
+        
+        .action-btn-view:hover {
+            background: #1890ff;
+            color: white;
+        }
+        
+        .action-btn-process {
+            background: #f6ffed;
+            color: #52c41a;
+        }
+        
+        .action-btn-process:hover {
+            background: #52c41a;
+            color: white;
+        }
+        
+        .action-btn-reject {
+            background: #fff1f0;
+            color: #f5222d;
+        }
+        
+        .action-btn-reject:hover {
+            background: #f5222d;
+            color: white;
+        }
+        
+        .action-btn-delete {
+            background: #f5f5f5;
+            color: #666;
+        }
+        
+        .action-btn-delete:hover {
+            background: #ff4d4f;
+            color: white;
+        }
+        
+        /* 分页 */
+        .pagination-container {
+            padding: 20px;
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: space-between;
+            align-items: center;
+            gap: 15px;
+            border-top: 1px solid #eee;
+        }
+
+        .pagination-left {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            font-size: 14px;
+            color: #666;
+        }
+
+        .page-size-selector {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .page-size-selector select {
+            padding: 6px 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 14px;
+            cursor: pointer;
+            background: white;
+            min-width: 70px;
+        }
+
+        .page-size-selector select:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .pagination {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 5px;
+            flex-wrap: wrap;
+        }
+
+        .pagination button {
+            padding: 8px 12px;
+            border: 1px solid #ddd;
+            background: white;
+            cursor: pointer;
+            border-radius: 6px;
+            transition: all 0.3s;
+            font-size: 14px;
+            min-width: 36px;
+            height: 36px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .pagination button:hover:not(:disabled) {
+            background: #667eea;
+            color: white;
+            border-color: #667eea;
+        }
+
+        .pagination button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            background: #f5f5f5;
+        }
+
+        .pagination button.active {
+            background: #667eea;
+            color: white;
+            border-color: #667eea;
+            font-weight: 600;
+        }
+
+        .pagination .page-ellipsis {
+            padding: 8px 12px;
+            color: #999;
+            cursor: default;
+        }
+
+        .pagination-right {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 14px;
+            color: #666;
+        }
+
+        .page-jump {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .page-jump input {
+            width: 60px;
+            padding: 6px 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 14px;
+            text-align: center;
+        }
+
+        .page-jump input:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .page-jump button {
+            padding: 6px 14px;
+            background: #667eea;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: background 0.3s;
+        }
+
+        .page-jump button:hover {
+            background: #5a6fd6;
+        }
+
+        .page-info {
+            font-size: 14px;
+            color: #666;
+            white-space: nowrap;
+        }
+
+        .page-info strong {
+            color: #667eea;
+        }
+
+        /* 分页信息栏 */
+        .pagination-info-bar {
+            padding: 15px 20px;
+            background: #f8f9fa;
+            border-top: 1px solid #eee;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 14px;
+            color: #666;
+        }
+
+        .pagination-info-bar .total-info {
+            font-weight: 500;
+        }
+
+        .pagination-info-bar .range-info {
+            color: #999;
+        }
+        
+        /* 详情弹窗 */
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.5);
+            z-index: 1000;
+            justify-content: center;
+            align-items: center;
+        }
+        
+        .modal-overlay.show {
+            display: flex;
+        }
+        
+        .modal {
+            background: white;
+            border-radius: 12px;
+            width: 90%;
+            max-width: 800px;
+            max-height: 90vh;
+            overflow: hidden;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.2);
+        }
+        
+        .modal-header {
+            padding: 20px;
+            border-bottom: 1px solid #eee;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .modal-header h2 {
+            font-size: 18px;
+            color: #333;
+        }
+        
+        .modal-close {
+            background: none;
+            border: none;
+            font-size: 24px;
+            cursor: pointer;
+            color: #999;
+        }
+        
+        .modal-close:hover {
+            color: #333;
+        }
+        
+        .modal-body {
+            padding: 20px;
+            overflow-y: auto;
+            max-height: calc(90vh - 140px);
+        }
+        
+        .detail-section {
+            margin-bottom: 20px;
+        }
+        
+        .detail-section h3 {
+            font-size: 16px;
+            color: #667eea;
+            margin-bottom: 15px;
+            padding-bottom: 8px;
+            border-bottom: 2px solid #e8e8e8;
+        }
+        
+        .detail-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 15px;
+        }
+        
+        .detail-item {
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+        }
+        
+        .detail-item label {
+            font-size: 12px;
+            color: #999;
+        }
+        
+        .detail-item span {
+            font-size: 14px;
+            color: #333;
+            font-weight: 500;
+        }
+        
+        /* 加载状态 */
+        .loading {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 50px;
+        }
+        
+        .spinner {
+            width: 40px;
+            height: 40px;
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #667eea;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        /* 空状态 */
+        .empty-state {
+            text-align: center;
+            padding: 60px 20px;
+            color: #999;
+        }
+        
+        .empty-state-icon {
+            font-size: 48px;
+            margin-bottom: 15px;
+        }
+        
+        /* 复选框 */
+        .checkbox-cell {
+            width: 40px;
+            text-align: center;
+        }
+        
+        /* 响应式设计 */
+        @media (max-width: 768px) {
+            .filter-row {
+                flex-direction: column;
+                align-items: stretch;
+            }
+            
+            .filter-group {
+                width: 100%;
+            }
+            
+            .filter-group select,
+            .filter-group input {
+                width: 100%;
+            }
+            
+            .data-table-container {
+                overflow-x: auto;
+            }
+            
+            .data-table {
+                min-width: 1000px;
+            }
+        }
+        
+        /* 导出进度 */
+        .progress-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.7);
+            z-index: 2000;
+            justify-content: center;
+            align-items: center;
+        }
+        
+        .progress-overlay.show {
+            display: flex;
+        }
+        
+        .progress-box {
+            background: white;
+            padding: 30px;
+            border-radius: 12px;
+            width: 400px;
+            text-align: center;
+        }
+        
+        .progress-bar-container {
+            width: 100%;
+            height: 10px;
+            background: #f0f0f0;
+            border-radius: 5px;
+            overflow: hidden;
+            margin: 20px 0;
+        }
+        
+        .progress-bar {
+            height: 100%;
+            background: linear-gradient(90deg, #667eea, #764ba2);
+            transition: width 0.3s;
+            width: 0%;
+        }
+        
+        .progress-text {
+            font-size: 14px;
+            color: #666;
+        }
+    </style>
+</head>
+<body>
+    <!-- 头部 -->
+    <header class="header">
+        <div class="header-content">
+            <h1>📋 应聘信息综合管理</h1>
+            <nav class="header-nav">
+                <a href="candidate-form-complete.html">返回应聘页面</a>
+                <a href="booking.html">面试预约</a>
+                <a href="admin-standalone.html">预约管理</a>
+                <a href="recruitment-process.html" style="color: #52c41a; font-weight: bold;">📋 招聘流程</a>
+                <a href="recruitment-dashboard.html">📊 数据看板</a>
+                <a href="settings.html">系统设置</a>
+                <a href="permissions.html">权限管理</a>
+                <a href="#" onclick="logout()" style="color: #ff6b6b;">退出登录</a>
+            </nav>
+        </div>
+    </header>
+
+    <!-- 统计卡片 -->
+    <div class="stats-container">
+        <div class="stat-card clickable" onclick="filterByStatCard('all')" data-filter="all">
+            <div class="stat-value" id="totalApplications">0</div>
+            <div class="stat-label">总应聘数</div>
+        </div>
+        <div class="stat-card clickable" onclick="filterByStatCard('pending')" data-filter="pending">
+            <div class="stat-value" id="pendingApplications">0</div>
+            <div class="stat-label">待处理</div>
+        </div>
+        <div class="stat-card clickable" onclick="filterByStatCard('not_attended')" data-filter="not_attended">
+            <div class="stat-value" id="notAttendedCount">0</div>
+            <div class="stat-label">失约</div>
+        </div>
+        <div class="stat-card clickable" onclick="filterByStatCard('today')" data-filter="today">
+            <div class="stat-value" id="todayBookings">0</div>
+            <div class="stat-label">今日面试</div>
+        </div>
+        <div class="stat-card clickable" onclick="filterByStatCard('confirmed')" data-filter="confirmed">
+            <div class="stat-value" id="confirmedBookings">0</div>
+            <div class="stat-label">已面试</div>
+        </div>
+    </div>
+
+    <!-- 主内容区 -->
+    <div class="main-container">
+        <!-- 筛选栏 -->
+        <div class="filter-bar">
+            <div class="filter-row">
+                <div class="filter-group">
+                    <label>应聘岗位:</label>
+                    <select id="filterPosition">
+                        <option value="">全部岗位</option>
+                    </select>
+                </div>
+                <div class="filter-group">
+                    <label>应聘工种:</label>
+                    <select id="filterJobType">
+                        <option value="">全部工种</option>
+                    </select>
+                </div>
+                <div class="filter-group">
+                    <label>应聘状态:</label>
+                    <select id="filterStatus">
+                        <option value="">全部状态</option>
+                        <option value="pending">待处理</option>
+                        <option value="processed">已面试</option>
+                        <option value="rejected">失约</option>
+                    </select>
+                </div>
+                <div class="filter-group">
+                    <label>预约状态:</label>
+                    <select id="filterBookingStatus">
+                        <option value="">全部</option>
+                        <option value="has_booking">已预约</option>
+                        <option value="no_booking">未预约</option>
+                        <option value="pending">待确认</option>
+                        <option value="confirmed">已确认</option>
+                        <option value="cancelled">已取消</option>
+                    </select>
+                </div>
+                <div class="filter-group">
+                    <label>申请日期:</label>
+                    <input type="date" id="filterBookingDate">
+                </div>
+            </div>
+            <div class="filter-row">
+                <div class="filter-group">
+                    <label>关键词搜索:</label>
+                    <input type="text" id="filterSearch" placeholder="姓名、电话、岗位...">
+                </div>
+                <div class="filter-group">
+                    <label>面试日期:</label>
+                    <input type="date" id="filterStartDate">
+                    <span>至</span>
+                    <input type="date" id="filterEndDate">
+                </div>
+                <button class="btn btn-primary" onclick="applyFilters()">
+                    🔍 筛选
+                </button>
+                <button class="btn btn-secondary" onclick="resetFilters()">
+                    重置
+                </button>
+            </div>
+        </div>
+
+        <!-- 数据表格 -->
+        <div class="data-table-container">
+            <div class="table-toolbar">
+                <div class="table-info">
+                    共 <strong id="displayCount">0</strong> 条记录
+                </div>
+                <div class="table-actions">
+                    <button class="btn btn-success" onclick="exportToExcel()">
+                        📊 导出Excel
+                    </button>
+                    <button class="btn btn-secondary" onclick="batchDelete()" id="batchDeleteBtn" disabled>
+                        🗑️ 批量删除
+                    </button>
+                </div>
+            </div>
+            <div id="tableContainer">
+                <div class="loading">
+                    <div class="spinner"></div>
+                </div>
+            </div>
+            <div class="pagination-info-bar" id="paginationInfoBar" style="display: none;">
+                <span class="total-info">共 <strong id="totalRecords">0</strong> 条记录</span>
+                <span class="range-info" id="currentRange">显示第 0-0 条</span>
+            </div>
+            <div class="pagination-container" id="paginationContainer" style="display: none;">
+                <div class="pagination-left">
+                    <div class="page-size-selector">
+                        <label>每页显示:</label>
+                        <select id="pageSizeSelector" onchange="changePageSize(this.value)">
+                            <option value="10">10条</option>
+                            <option value="15">15条</option>
+                            <option value="20" selected>20条</option>
+                            <option value="50">50条</option>
+                            <option value="100">100条</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="pagination" id="pagination"></div>
+                <div class="pagination-right">
+                    <span class="page-info">第 <strong id="currentPageNum">1</strong> / <strong id="totalPagesNum">1</strong> 页</span>
+                    <div class="page-jump">
+                        <span>跳至</span>
+                        <input type="number" id="pageJumpInput" min="1" placeholder="页码" onkeypress="handlePageJumpKeypress(event)">
+                        <span>页</span>
+                        <button onclick="jumpToPage()">确定</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 详情弹窗 -->
+    <div class="modal-overlay" id="detailModal">
+        <div class="modal">
+            <div class="modal-header">
+                <h2>应聘详情</h2>
+                <button class="modal-close" onclick="closeModal()">&times;</button>
+            </div>
+            <div class="modal-body" id="modalBody">
+                <!-- 动态内容 -->
+            </div>
+        </div>
+    </div>
+
+    <!-- 进度弹窗 -->
+    <div class="progress-overlay" id="progressOverlay">
+        <div class="progress-box">
+            <h3 id="progressTitle">正在处理...</h3>
+            <div class="progress-bar-container">
+                <div class="progress-bar" id="progressBar"></div>
+            </div>
+            <div class="progress-text" id="progressText">0%</div>
+        </div>
+    </div>
+
+    <!-- 引入权限管理模块 -->
+    <script src="auth.js"></script>
+
+    <script>
+        // ==================== 登录检查（支持 Supabase Auth）====================
+        (function() {
+            // 检查本地存储的登录状态
+            const isLoggedIn = localStorage.getItem('adminLoggedIn') === 'true';
+            const token = localStorage.getItem('adminToken');
+            const currentUserStr = localStorage.getItem('currentUser');
+            
+            // 必须同时满足条件才算已登录
+            if (!isLoggedIn || !token || !currentUserStr) {
+                // 清除可能不完整的登录状态
+                localStorage.removeItem('adminToken');
+                localStorage.removeItem('adminLoggedIn');
+                localStorage.removeItem('currentUser');
+                window.location.replace('login-new.html');
+                return;
+            }
+            
+            // 验证用户信息格式
+            try {
+                const currentUser = JSON.parse(currentUserStr);
+                if (!currentUser || !currentUser.username || !currentUser.role) {
+                    throw new Error('用户信息不完整');
+                }
+            } catch (e) {
+                // 用户信息格式错误
+                localStorage.removeItem('adminToken');
+                localStorage.removeItem('adminLoggedIn');
+                localStorage.removeItem('currentUser');
+                window.location.replace('login-new.html');
+                return;
+            }
+        })();
+
+        // ==================== 退出登录（支持 Supabase Auth）====================
+        async function logout() {
+            if (confirm('确定要退出登录吗？')) {
+                try {
+                    // 尝试退出 Supabase Auth（如果可用）
+                    if (typeof supabaseClient !== 'undefined' && supabaseClient.auth) {
+                        await supabaseClient.auth.signOut();
+                    }
+                } catch (e) {
+                    console.log('Supabase 退出登录:', e);
+                }
+                
+                // 清除本地登录状态
+                localStorage.removeItem('adminToken');
+                localStorage.removeItem('adminLoggedIn');
+                localStorage.removeItem('currentUser');
+                
+                // 跳转到登录页面
+                window.location.href = 'login-new.html';
+            }
+        }
+
+        // ==================== 配置 ====================
+        const SUPABASE_URL = 'https://dxrghlqnwfwpuxjvyisv.supabase.co';
+        const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImR4cmdobHFud2Z3cHV4anZ5aXN2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQ2ODYyMjAsImV4cCI6MjA5MDI2MjIyMH0.r6hDrTVZ1p_Qq6sHuLeBEo3SFqGEh0trwbRMXLWnrNQ';
+        
+        // ==================== 全局变量 ====================
+        var supabaseClient = null;
+        var allApplications = [];
+        var filteredApplications = [];
+        var currentPage = 1;
+        var pageSize = parseInt(localStorage.getItem('applicationsPageSize')) || 20; // 从本地存储读取用户偏好，默认20
+        var sortField = 'created_at';
+        var sortDirection = 'desc';
+        
+        // 时段映射 - 与预约管理模块保持一致
+        var TIME_SLOTS = {
+            'slot_1': { label: '上午场 09:00-10:00', time: '09:00-10:00' },
+            'slot_2': { label: '上午场 10:00-10:30', time: '10:00-10:30' },
+            'slot_3': { label: '下午场 13:00-14:00', time: '13:00-14:00' },
+            'slot_4': { label: '下午场 14:00-15:00', time: '14:00-15:00' },
+            'slot_5': { label: '下午场 15:00-15:30', time: '15:00-15:30' },
+            // 兼容旧数据格式
+            'morning_1': { label: '上午场 09:00-10:00', time: '09:00-10:00' },
+            'morning_2': { label: '上午场 10:00-10:30', time: '10:00-10:30' },
+            'afternoon_1': { label: '下午场 14:00-15:00', time: '14:00-15:00' },
+            'afternoon_2': { label: '下午场 15:00-16:00', time: '15:00-16:00' },
+            // 其他可能的时段格式
+            '09:00-10:00': { label: '上午场 09:00-10:00', time: '09:00-10:00' },
+            '10:00-10:30': { label: '上午场 10:00-10:30', time: '10:00-10:30' },
+            '13:00-14:00': { label: '下午场 13:00-14:00', time: '13:00-14:00' },
+            '14:00-15:00': { label: '下午场 14:00-15:00', time: '14:00-15:00' },
+            '15:00-15:30': { label: '下午场 15:00-15:30', time: '15:00-15:30' }
+        };
+        
+        // ==================== 初始化 ====================
+        function initSupabase() {
+            try {
+                // 检查 window.supabase 是否存在
+                if (typeof window.supabase !== 'undefined' && window.supabase.createClient) {
+                    supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+                    console.log('✅ Supabase 客户端初始化成功');
+                    return true;
+                } else {
+                    console.warn('⚠️ window.supabase 未加载，尝试备用加载方式');
+                    // 尝试备用 CDN 加载
+                    loadSupabaseBackup();
+                    return false;
+                }
+            } catch (e) {
+                console.error('❌ Supabase 初始化失败:', e);
+                return false;
+            }
+        }
+        
+        // 备用 Supabase 加载
+        function loadSupabaseBackup() {
+            const script = document.createElement('script');
+            script.src = 'https://unpkg.com/@supabase/supabase-js@2/dist/umd/supabase.min.js';
+            script.onload = function() {
+                console.log('✅ 备用 CDN 加载成功');
+                if (typeof window.supabase !== 'undefined' && window.supabase.createClient) {
+                    supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+                    console.log('✅ Supabase 客户端初始化成功（备用）');
+                    // 重新加载数据
+                    loadData();
+                }
+            };
+            script.onerror = function() {
+                console.error('❌ 备用 CDN 也加载失败');
+                showLoadError('Supabase SDK 加载失败，请检查网络连接');
+            };
+            document.head.appendChild(script);
+        }
+        
+        // 显示加载错误
+        function showLoadError(message) {
+            const container = document.getElementById('tableContainer');
+            if (container) {
+                container.innerHTML = `
+                    <div class="empty-state">
+                        <div class="empty-state-icon">⚠️</div>
+                        <p>${message}</p>
+                        <p style="font-size: 12px; color: #999; margin-top: 10px;">
+                            请检查网络连接或刷新页面重试
+                        </p>
+                        <button class="btn btn-primary" onclick="location.reload()" style="margin-top: 15px;">
+                            刷新页面
+                        </button>
+                    </div>
+                `;
+            }
+        }
+        
+        // ==================== 加载筛选选项 ====================
+        async function loadFilterOptions() {
+            try {
+                // 加载岗位选项
+                const positionSelect = document.getElementById('filterPosition');
+                const positionResult = await supabaseClient.from('positions').select('*').eq('is_active', true).order('sort_order');
+                if (!positionResult.error && positionResult.data && positionResult.data.length > 0) {
+                    positionSelect.innerHTML = '<option value="">全部岗位</option>';
+                    positionResult.data.forEach(pos => {
+                        positionSelect.innerHTML += `<option value="${pos.name}">${pos.name}</option>`;
+                    });
+                    console.log('✅ 岗位选项加载成功:', positionResult.data.length, '个');
+                } else {
+                    // 如果数据库中没有数据，使用默认选项
+                    positionSelect.innerHTML = `
+                        <option value="">全部岗位</option>
+                        <option value="牙科技工">牙科技工</option>
+                        <option value="学徒">学徒</option>
+                        <option value="普工">普工</option>
+                    `;
+                    console.log('⚠️ 使用默认岗位选项');
+                }
+                
+                // 加载工种选项
+                const jobTypeSelect = document.getElementById('filterJobType');
+                try {
+                    const jobTypeResult = await supabaseClient.from('job_types').select('*').eq('is_active', true).order('sort_order');
+                    if (!jobTypeResult.error && jobTypeResult.data && jobTypeResult.data.length > 0) {
+                        jobTypeSelect.innerHTML = '<option value="">全部工种</option>';
+                        jobTypeResult.data.forEach(job => {
+                            jobTypeSelect.innerHTML += `<option value="${job.name}">${job.name}</option>`;
+                        });
+                        console.log('✅ 工种选项加载成功:', jobTypeResult.data.length, '个');
+                    } else {
+                        throw new Error('查询失败或无数据');
+                    }
+                } catch (e) {
+                    console.log('⚠️ 从数据库加载工种失败，使用默认选项:', e.message);
+                    // 使用默认选项
+                    jobTypeSelect.innerHTML = `
+                        <option value="">全部工种</option>
+                        <option value="上瓷">上瓷</option>
+                        <option value="车瓷">车瓷</option>
+                        <option value="上釉">上釉</option>
+                    `;
+                }
+            } catch (e) {
+                console.error('❌ 加载筛选选项失败:', e);
+                // 出错时使用默认选项
+                document.getElementById('filterPosition').innerHTML = `
+                    <option value="">全部岗位</option>
+                    <option value="牙科技工">牙科技工</option>
+                    <option value="学徒">学徒</option>
+                    <option value="普工">普工</option>
+                `;
+                document.getElementById('filterJobType').innerHTML = `
+                    <option value="">全部工种</option>
+                    <option value="上瓷">上瓷</option>
+                    <option value="车瓷">车瓷</option>
+                    <option value="上釉">上釉</option>
+                `;
+            }
+        }
+        
+        // ==================== 数据加载 ====================
+        async function loadData() {
+            const container = document.getElementById('tableContainer');
+            container.innerHTML = '<div class="loading"><div class="spinner"></div></div>';
+            
+            let dbApplications = [];
+            let allBookings = [];
+            let dbError = null;
+            
+            try {
+                // 1. 加载数据库中的应聘信息（带超时）
+                try {
+                    const result = await Promise.race([
+                        supabaseClient.from('applications').select('*').order('created_at', { ascending: false }),
+                        new Promise((_, reject) => setTimeout(() => reject(new Error('数据库连接超时')), 10000))
+                    ]);
+                    
+                    if (!result.error && result.data) {
+                        dbApplications = result.data;
+                        console.log('✅ 数据库应聘信息加载成功:', dbApplications.length, '条');
+                        // 调试：输出第一条记录的字段
+                        if (dbApplications.length > 0) {
+                            console.log('第一条记录:', dbApplications[0]);
+                            console.log('form_data:', dbApplications[0].form_data);
+                            console.log('dynamic_fields:', dbApplications[0].dynamic_fields);
+                        }
+                    } else if (result.error) {
+                        console.warn('⚠️ 数据库查询错误:', result.error.message, result.error);
+                        dbError = result.error;
+                    } else {
+                        console.log('ℹ️ 查询结果:', result);
+                    }
+                } catch (e) {
+                    console.warn('⚠️ 数据库加载失败:', e.message);
+                    dbError = e;
+                }
+                
+                // 2. 加载预约信息（带超时）
+                try {
+                    const bookingsResult = await Promise.race([
+                        supabaseClient.from('bookings').select('*'),
+                        new Promise((_, reject) => setTimeout(() => reject(new Error('数据库连接超时')), 10000))
+                    ]);
+                    
+                    if (!bookingsResult.error && bookingsResult.data) {
+                        allBookings = bookingsResult.data;
+                        console.log('✅ 数据库预约信息加载成功:', allBookings.length, '条');
+                    } else if (bookingsResult.error) {
+                        console.warn('⚠️ 预约查询错误:', bookingsResult.error.message);
+                    }
+                } catch (e) {
+                    console.warn('⚠️ 预约信息加载失败:', e.message);
+                }
+                
+                // 3. 关联应聘信息和预约信息
+                allApplications = dbApplications.map(app => {
+                    const dynamicFields = app.dynamic_fields || app.form_data || app.fields || {};
+                    
+                    // 辅助函数：获取字段值（支持多种字段名格式）
+                    function getFieldValue(...fieldNames) {
+                        for (const name of fieldNames) {
+                            if (dynamicFields[name] !== undefined && dynamicFields[name] !== '') {
+                                return dynamicFields[name];
+                            }
+                        }
+                        return '';
+                    }
+                    
+                    const phone = app.phone || getFieldValue('phone', 'Phone') || '';
+                    const name = app.name || getFieldValue('name', 'Name') || '';
+                    const position = app.position || getFieldValue('position', 'Position') || '';
+                    
+                    // 通过 application_id 或电话关联预约
+                    let bookings = allBookings.filter(b => 
+                        b.application_id === app.id || (phone && b.phone === phone)
+                    );
+                    
+                    // 优先选择未取消的预约，按创建时间倒序
+                    let booking = null;
+                    if (bookings.length > 0) {
+                        // 先尝试找未取消的预约
+                        const activeBookings = bookings.filter(b => b.status !== 'cancelled');
+                        if (activeBookings.length > 0) {
+                            booking = activeBookings.sort((a, b) => new Date(b.created_at) - new Date(a.created_at))[0];
+                        } else {
+                            // 如果没有未取消的，才使用已取消的（用于历史记录展示）
+                            booking = bookings.sort((a, b) => new Date(b.created_at) - new Date(a.created_at))[0];
+                        }
+                    }
+                    
+                    return {
+                        ...app,
+                        booking: booking,
+                        name: name,
+                        phone: phone,
+                        position: position,
+                        source: 'database'
+                    };
+                });
+                
+                console.log('✅ 数据关联完成，共', allApplications.length, '条记录');
+                
+                // 4. 更新统计
+                updateStats();
+                
+                // 5. 应用筛选和排序
+                applyFilters();
+                
+                // 6. 显示数据库连接状态提示
+                if (dbError) {
+                    console.warn('⚠️ 数据库连接存在问题，部分数据可能无法显示');
+                    // 显示警告但不阻止页面使用
+                    if (allApplications.length === 0) {
+                        container.innerHTML = `
+                            <div class="empty-state">
+                                <div class="empty-state-icon">⚠️</div>
+                                <p>无法连接到数据库</p>
+                                <p style="font-size: 12px; color: #999; margin-top: 10px;">
+                                    请检查网络连接或刷新页面重试<br>
+                                    错误信息: ${dbError.message || '未知错误'}
+                                </p>
+                                <button class="btn btn-primary" onclick="loadData()" style="margin-top: 15px;">
+                                    重新加载
+                                </button>
+                            </div>
+                        `;
+                        return;
+                    }
+                }
+                
+            } catch (e) {
+                console.error('❌ 加载数据失败:', e);
+                container.innerHTML = `
+                    <div class="empty-state">
+                        <div class="empty-state-icon">⚠️</div>
+                        <p>加载数据失败: ${e.message}</p>
+                        <p style="font-size: 12px; color: #999; margin-top: 10px;">
+                            请检查网络连接或刷新页面重试
+                        </p>
+                        <button class="btn btn-primary" onclick="loadData()" style="margin-top: 15px;">
+                            重新加载
+                        </button>
+                    </div>
+                `;
+            }
+        }
+        
+        // ==================== 更新统计 ====================
+        function updateStats() {
+            const today = new Date().toISOString().split('T')[0];
+            
+            // 辅助函数：获取应聘状态（支持多种数据源）
+            function getAppStatus(app) {
+                // 优先使用 app.status
+                if (app.status && app.status !== '') {
+                    return app.status;
+                }
+                // 从 dynamic_fields 中查找
+                const dynamicFields = app.dynamic_fields || app.form_data || app.fields || {};
+                const statusFields = ['status', '应聘状态', '申请状态', 'state'];
+                for (const field of statusFields) {
+                    if (dynamicFields[field] && dynamicFields[field] !== '') {
+                        return dynamicFields[field];
+                    }
+                }
+                // 默认为 pending
+                return 'pending';
+            }
+            
+            // 调试：输出前5条记录的状态信息
+            console.log('=== 统计数据调试 ===');
+            console.log('总记录数:', allApplications.length);
+            if (allApplications.length > 0) {
+                console.log('前3条记录的状态:');
+                allApplications.slice(0, 3).forEach((app, i) => {
+                    console.log(`  记录${i+1}:`, {
+                        id: app.id,
+                        name: app.name,
+                        status: app.status,
+                        dynamicStatus: (app.dynamic_fields || app.form_data || {})['status'],
+                        computedStatus: getAppStatus(app)
+                    });
+                });
+            }
+            
+            // 统计各状态数量
+            const statusCounts = {};
+            allApplications.forEach(app => {
+                const status = getAppStatus(app);
+                statusCounts[status] = (statusCounts[status] || 0) + 1;
+            });
+            console.log('各状态统计:', statusCounts);
+            
+            document.getElementById('totalApplications').textContent = allApplications.length;
+            document.getElementById('pendingApplications').textContent = 
+                allApplications.filter(a => getAppStatus(a) === 'pending').length;
+            document.getElementById('notAttendedCount').textContent = 
+                allApplications.filter(a => getAppStatus(a) === 'rejected').length;
+            // 今日面试：预约日期为今天，且预约状态不是已取消，且应聘状态不是已拒绝
+            const todayBookings = allApplications.filter(a => 
+                a.booking && 
+                a.booking.booking_date === today && 
+                a.booking.status !== 'cancelled' &&
+                getAppStatus(a) !== 'rejected'
+            );
+            document.getElementById('todayBookings').textContent = todayBookings.length;
+            console.log(`今日面试统计: ${todayBookings.length} 条, 日期: ${today}`);
+            
+            // 已确认面试：预约状态为 confirmed，且应聘状态为已处理（processed）
+            // 只有应聘状态为已处理的人才算真正确认参加面试
+            const confirmedBookings = allApplications.filter(a => 
+                a.booking && 
+                a.booking.status === 'confirmed' && 
+                getAppStatus(a) === 'processed'
+            );
+            document.getElementById('confirmedBookings').textContent = confirmedBookings.length;
+            console.log(`已确认面试统计: ${confirmedBookings.length} 条`);
+        }
+        
+        // ==================== 统计卡片筛选功能 ====================
+        let currentStatCardFilter = null;
+        
+        function filterByStatCard(filterType) {
+            // 更新卡片激活状态
+            document.querySelectorAll('.stat-card').forEach(card => {
+                card.classList.remove('active');
+            });
+            
+            // 如果点击的是当前激活的卡片，则取消筛选
+            if (currentStatCardFilter === filterType) {
+                currentStatCardFilter = null;
+                // 重置所有筛选条件
+                resetFilters();
+                return;
+            }
+            
+            // 激活当前点击的卡片
+            const activeCard = document.querySelector(`.stat-card[data-filter="${filterType}"]`);
+            if (activeCard) {
+                activeCard.classList.add('active');
+            }
+            
+            currentStatCardFilter = filterType;
+            
+            // 先重置所有筛选条件，避免残留条件干扰
+            document.getElementById('filterPosition').value = '';
+            document.getElementById('filterJobType').value = '';
+            document.getElementById('filterStatus').value = '';
+            document.getElementById('filterBookingStatus').value = '';
+            document.getElementById('filterBookingDate').value = '';
+            document.getElementById('filterSearch').value = '';
+            document.getElementById('filterStartDate').value = '';
+            document.getElementById('filterEndDate').value = '';
+            
+            // 根据筛选类型设置筛选条件
+            const today = new Date().toISOString().split('T')[0];
+            
+            switch(filterType) {
+                case 'all':
+                    // 显示全部，已经重置过了，直接应用筛选
+                    break;
+                case 'pending':
+                    // 待处理：应聘状态为 pending
+                    document.getElementById('filterStatus').value = 'pending';
+                    break;
+                case 'not_attended':
+                    // 未参加面试：应聘状态为已拒绝
+                    document.getElementById('filterStatus').value = 'rejected';
+                    break;
+                case 'today':
+                    // 今日面试：预约日期为今天，且预约状态不是已取消，且应聘状态为已处理
+                    document.getElementById('filterBookingDate').value = today;
+                    document.getElementById('filterBookingStatus').value = 'has_booking';
+                    document.getElementById('filterStatus').value = 'processed';
+                    break;
+                case 'confirmed':
+                    // 已确认面试：预约状态为 confirmed，且应聘状态为已处理
+                    document.getElementById('filterStatus').value = 'processed';
+                    document.getElementById('filterBookingStatus').value = 'confirmed';
+                    break;
+            }
+            
+            // 应用筛选
+            applyFilters();
+            
+            // 显示提示
+            const filterNames = {
+                'all': '全部应聘',
+                'pending': '待处理',
+                'not_attended': '失约',
+                'today': '今日面试',
+                'confirmed': '已面试'
+            };
+            console.log(`已筛选: ${filterNames[filterType]}`);
+        }
+        
+        // ==================== 筛选功能 ====================
+        function applyFilters() {
+            const positionFilter = document.getElementById('filterPosition').value;
+            const jobTypeFilter = document.getElementById('filterJobType').value;
+            const statusFilter = document.getElementById('filterStatus').value;
+            const bookingStatusFilter = document.getElementById('filterBookingStatus').value;
+            const bookingDateFilter = document.getElementById('filterBookingDate').value;
+            const searchTerm = document.getElementById('filterSearch').value.toLowerCase();
+            const startDate = document.getElementById('filterStartDate').value;
+            const endDate = document.getElementById('filterEndDate').value;
+            
+            // 辅助函数：获取应聘状态（与 updateStats 中保持一致）
+            function getAppStatus(app) {
+                if (app.status && app.status !== '') {
+                    return app.status;
+                }
+                const dynamicFields = app.dynamic_fields || app.form_data || app.fields || {};
+                const statusFields = ['status', '应聘状态', '申请状态', 'state'];
+                for (const field of statusFields) {
+                    if (dynamicFields[field] && dynamicFields[field] !== '') {
+                        return dynamicFields[field];
+                    }
+                }
+                return 'pending';
+            }
+            
+            filteredApplications = allApplications.filter(app => {
+                const dynamicFields = app.dynamic_fields || app.form_data || app.fields || {};
+                
+                // 岗位筛选
+                if (positionFilter && app.position !== positionFilter) return false;
+                
+                // 工种筛选
+                if (jobTypeFilter) {
+                    // 从动态字段中查找工种信息
+                    let jobType = '';
+                    // 尝试多种可能的字段名
+                    const jobTypeFields = ['job_type', 'job type', 'Job Type', '工种', '工种类型', '应聘工种', 'jobType', 'job'];
+                    for (const fieldName of jobTypeFields) {
+                        if (dynamicFields[fieldName] && dynamicFields[fieldName] !== '') {
+                            jobType = dynamicFields[fieldName];
+                            break;
+                        }
+                    }
+                    // 如果还是没找到，尝试遍历所有动态字段
+                    if (!jobType) {
+                        for (const key in dynamicFields) {
+                            const lowerKey = key.toLowerCase();
+                            if (lowerKey.includes('job') || lowerKey.includes('工种')) {
+                                if (dynamicFields[key] && dynamicFields[key] !== '') {
+                                    jobType = dynamicFields[key];
+                                    break;
+                                }
+                            }
+                        }
+                    }
+                    // 如果工种不匹配，过滤掉
+                    if (jobType !== jobTypeFilter) return false;
+                }
+                
+                // 应聘状态筛选（使用统一的 getAppStatus 函数）
+                if (statusFilter && getAppStatus(app) !== statusFilter) return false;
+                
+                // 预约状态筛选
+                if (bookingStatusFilter) {
+                    if (bookingStatusFilter === 'has_booking') {
+                        if (!app.booking) return false;
+                        // has_booking 时排除已取消的预约
+                        if (app.booking.status === 'cancelled') return false;
+                        // has_booking 时排除已拒绝的应聘者
+                        if (getAppStatus(app) === 'rejected') return false;
+                    }
+                    if (bookingStatusFilter === 'no_booking' && app.booking) return false;
+                    if (['pending', 'confirmed', 'cancelled'].includes(bookingStatusFilter)) {
+                        if (!app.booking || app.booking.status !== bookingStatusFilter) return false;
+                    }
+                    // 已确认面试的筛选需要排除已拒绝的应聘者
+                    if (bookingStatusFilter === 'confirmed') {
+                        if (getAppStatus(app) === 'rejected') return false;
+                    }
+                }
+                
+                // 申请日期筛选（原面试日期）
+                if (bookingDateFilter && app.booking) {
+                    if (app.booking.booking_date !== bookingDateFilter) return false;
+                    // 今日面试筛选时，排除已取消和已拒绝的记录
+                    if (app.booking.status === 'cancelled') return false;
+                    if (getAppStatus(app) === 'rejected') return false;
+                }
+
+                // 如果没有预约状态筛选，但有申请日期筛选，也需要排除已取消和已拒绝的
+                if (bookingDateFilter && !bookingStatusFilter && app.booking) {
+                    if (app.booking.status === 'cancelled') return false;
+                    if (getAppStatus(app) === 'rejected') return false;
+                }
+
+                // 面试日期范围筛选（原申请时间）
+                if (startDate) {
+                    const appDate = new Date(app.created_at);
+                    if (appDate < new Date(startDate)) return false;
+                }
+                if (endDate) {
+                    const appDate = new Date(app.created_at);
+                    if (appDate > new Date(endDate + 'T23:59:59')) return false;
+                }
+                
+                // 关键词搜索
+                if (searchTerm) {
+                    const name = (app.name || dynamicFields.name || '').toLowerCase();
+                    const phone = (app.phone || dynamicFields.phone || '').toLowerCase();
+                    const position = (app.position || dynamicFields.position || '').toLowerCase();
+                    
+                    if (!name.includes(searchTerm) && 
+                        !phone.includes(searchTerm) && 
+                        !position.includes(searchTerm)) {
+                        return false;
+                    }
+                }
+                
+                return true;
+            });
+            
+            // 排序
+            sortData();
+            
+            // 重置到第一页
+            currentPage = 1;
+            
+            // 渲染表格
+            renderTable();
+        }
+        
+        function resetFilters() {
+            document.getElementById('filterPosition').value = '';
+            document.getElementById('filterJobType').value = '';
+            document.getElementById('filterStatus').value = '';
+            document.getElementById('filterBookingStatus').value = '';
+            document.getElementById('filterBookingDate').value = '';
+            document.getElementById('filterSearch').value = '';
+            document.getElementById('filterStartDate').value = '';
+            document.getElementById('filterEndDate').value = '';
+            applyFilters();
+        }
+        
+        // ==================== 排序功能 ====================
+        function sortData() {
+            filteredApplications.sort((a, b) => {
+                let valA, valB;
+                
+                switch (sortField) {
+                    case 'name':
+                        valA = a.name || '';
+                        valB = b.name || '';
+                        break;
+                    case 'position':
+                        valA = a.position || '';
+                        valB = b.position || '';
+                        break;
+                    case 'booking_date':
+                        valA = a.booking ? a.booking.booking_date : '';
+                        valB = b.booking ? b.booking.booking_date : '';
+                        break;
+                    case 'created_at':
+                        valA = a.created_at || '';
+                        valB = b.created_at || '';
+                        break;
+                    default:
+                        valA = a[sortField] || '';
+                        valB = b[sortField] || '';
+                }
+                
+                if (valA < valB) return sortDirection === 'asc' ? -1 : 1;
+                if (valA > valB) return sortDirection === 'asc' ? 1 : -1;
+                return 0;
+            });
+        }
+        
+        function toggleSort(field) {
+            if (sortField === field) {
+                sortDirection = sortDirection === 'asc' ? 'desc' : 'asc';
+            } else {
+                sortField = field;
+                sortDirection = 'asc';
+            }
+            sortData();
+            renderTable();
+        }
+        
+        // ==================== 渲染表格 ====================
+        function renderTable() {
+            const container = document.getElementById('tableContainer');
+            const start = (currentPage - 1) * pageSize;
+            const end = Math.min(start + pageSize, filteredApplications.length);
+            const pageData = filteredApplications.slice(start, end);
+
+            document.getElementById('displayCount').textContent = filteredApplications.length;
+
+            // 更新分页信息栏
+            const paginationInfoBar = document.getElementById('paginationInfoBar');
+            const paginationContainer = document.getElementById('paginationContainer');
+
+            if (filteredApplications.length === 0) {
+                container.innerHTML = `
+                    <div class="empty-state">
+                        <div class="empty-state-icon">📭</div>
+                        <p>暂无数据</p>
+                    </div>
+                `;
+                paginationInfoBar.style.display = 'none';
+                paginationContainer.style.display = 'none';
+                return;
+            }
+
+            // 显示分页控件
+            paginationInfoBar.style.display = 'flex';
+            paginationContainer.style.display = 'flex';
+
+            // 更新记录数显示
+            document.getElementById('totalRecords').textContent = filteredApplications.length;
+            document.getElementById('currentRange').textContent = `显示第 ${start + 1}-${end} 条`;
+            
+            // 【优化】修改状态显示文本：已处理→已面试，已拒绝→失约
+            const statusMap = { 'pending': '待处理', 'processed': '已面试', 'rejected': '失约' };
+            const bookingStatusMap = { 'pending': '待确认', 'confirmed': '已确认', 'cancelled': '已取消' };
+            
+            let html = `
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th class="checkbox-cell">
+                                <input type="checkbox" id="selectAll" onchange="toggleSelectAll(this)">
+                            </th>
+                            <th onclick="toggleSort('name')">
+                                姓名 <span class="sort-icon">${sortField === 'name' ? (sortDirection === 'asc' ? '↑' : '↓') : '↕'}</span>
+                            </th>
+                            <th onclick="toggleSort('position')">
+                                岗位 <span class="sort-icon">${sortField === 'position' ? (sortDirection === 'asc' ? '↑' : '↓') : '↕'}</span>
+                            </th>
+                            <th>工种</th>
+                            <th>学历</th>
+                            <th>电话</th>
+                            <th onclick="toggleSort('created_at')">
+                                面试日期 <span class="sort-icon">${sortField === 'created_at' ? (sortDirection === 'asc' ? '↑' : '↓') : '↕'}</span>
+                            </th>
+                            <th>面试时段</th>
+                            <th>预约状态</th>
+                            <th>应聘状态</th>
+                            <th onclick="toggleSort('booking_date')">
+                                申请日期 <span class="sort-icon">${sortField === 'booking_date' ? (sortDirection === 'asc' ? '↑' : '↓') : '↕'}</span>
+                            </th>
+                            <th>操作</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+            `;
+            
+            pageData.forEach((app, index) => {
+                const dynamicFields = app.dynamic_fields || app.form_data || app.fields || {};
+                
+                // 辅助函数：获取字段值（支持多种字段名格式，同时检查动态字段和数据库直接字段）
+                function getFieldValue(...fieldNames) {
+                    for (const name of fieldNames) {
+                        // 首先检查动态字段
+                        if (dynamicFields[name] !== undefined && dynamicFields[name] !== '') {
+                            return dynamicFields[name];
+                        }
+                        // 然后检查数据库记录的直接字段
+                        if (app[name] !== undefined && app[name] !== '') {
+                            return app[name];
+                        }
+                    }
+                    return '';
+                }
+                
+                const education = app.education || getFieldValue('education', 'Education') || '-';
+                const experience = app.experience || getFieldValue('experience', 'Experience') || '-';
+                
+                // 尝试多种可能的工种字段名
+                let jobType = getFieldValue('job_type', 'job type', 'Job Type', '工种', '工种类型', '应聘工种', 'jobType', 'job');
+                
+                // 如果还是没找到，尝试遍历所有动态字段，查找包含"工种"或"job"的字段
+                if (!jobType) {
+                    for (const key in dynamicFields) {
+                        const lowerKey = key.toLowerCase();
+                        if (lowerKey.includes('job') || lowerKey.includes('工种') || lowerKey.includes('type')) {
+                            if (dynamicFields[key] && dynamicFields[key] !== '') {
+                                jobType = dynamicFields[key];
+                                console.log('通过模糊匹配找到工种字段:', key, '=', jobType);
+                                break;
+                            }
+                        }
+                    }
+                }
+                
+                // 如果还是没找到，尝试从 form_data 中查找 "应聘工种" 或 "工种" 字段（中文标签）
+                if (!jobType) {
+                    // 遍历 form_data 的所有键，查找可能的中文工种字段名
+                    for (const key in dynamicFields) {
+                        if (key.includes('工种') || key === '应聘工种') {
+                            if (dynamicFields[key] && dynamicFields[key] !== '') {
+                                jobType = dynamicFields[key];
+                                console.log('找到中文工种字段:', key, '=', jobType);
+                                break;
+                            }
+                        }
+                    }
+                }
+                
+                // 调试：输出第一条记录的动态字段
+                if (index === 0) {
+                    console.log('动态字段:', dynamicFields);
+                    console.log('工种字段值:', jobType || '-');
+                }
+                
+                let bookingDate = '-';
+                let bookingSlot = '-';
+                let bookingStatus = '未预约';
+                let bookingStatusClass = 'booking-status-none';
+                
+                if (app.booking) {
+                    bookingDate = app.booking.booking_date || '-';
+                    bookingSlot = TIME_SLOTS[app.booking.time_slot]?.label || app.booking.time_slot || '-';
+                    bookingStatus = bookingStatusMap[app.booking.status] || app.booking.status || '-';
+                    bookingStatusClass = 'booking-status-' + (app.booking.status || 'none');
+                }
+                
+                html += `
+                    <tr>
+                        <td class="checkbox-cell">
+                            <input type="checkbox" class="row-checkbox" value="${app.id}">
+                        </td>
+                        <td>${app.name || '-'}</td>
+                        <td>${app.position || '-'}</td>
+                        <td>${jobType}</td>
+                        <td>${education}</td>
+                        <td>${app.phone || '-'}</td>
+                        <td>${new Date(app.created_at).toLocaleString('zh-CN')}</td>
+                        <td>${bookingSlot}</td>
+                        <td><span class="status-tag ${bookingStatusClass}">${bookingStatus}</span></td>
+                        <td><span class="status-tag status-${app.status}">${statusMap[app.status] || '待处理'}</span></td>
+                        <td>${bookingDate}</td>
+                        <td>
+                            <div class="action-btns">
+                                <button type="button" class="action-btn action-btn-view" data-action="view" data-id="${app.id}">查看</button>
+                                ${app.status === 'pending' ? `
+                                    <button type="button" class="action-btn action-btn-process" data-action="process" data-id="${app.id}">处理</button>
+                                    <button type="button" class="action-btn action-btn-reject" data-action="reject" data-id="${app.id}">拒绝</button>
+                                ` : ''}
+                                <button type="button" class="action-btn action-btn-delete" data-action="delete" data-id="${app.id}" data-name="${app.name || ''}">删除</button>
+                            </div>
+                        </td>
+                    </tr>
+                `;
+            });
+            
+            html += '</tbody></table>';
+            container.innerHTML = html;
+            
+            // 渲染分页
+            renderPagination();
+        }
+        
+        // ==================== 分页 ====================
+        function renderPagination() {
+            const totalPages = Math.ceil(filteredApplications.length / pageSize);
+            const pagination = document.getElementById('pagination');
+
+            // 更新页码显示
+            document.getElementById('currentPageNum').textContent = currentPage;
+            document.getElementById('totalPagesNum').textContent = totalPages;
+
+            if (totalPages <= 1) {
+                pagination.innerHTML = '';
+                return;
+            }
+
+            let html = '';
+
+            // 上一页按钮
+            html += `<button onclick="goToPage(${currentPage - 1})" ${currentPage === 1 ? 'disabled' : ''} title="上一页">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <polyline points="15 18 9 12 15 6"></polyline>
+                </svg>
+            </button>`;
+
+            // 智能页码显示算法
+            const maxVisiblePages = 7; // 最多显示的页码按钮数
+            let startPage, endPage;
+
+            if (totalPages <= maxVisiblePages) {
+                // 总页数较少，显示所有页码
+                startPage = 1;
+                endPage = totalPages;
+            } else {
+                // 总页数较多，使用智能显示
+                if (currentPage <= 4) {
+                    // 当前页靠近开头
+                    startPage = 1;
+                    endPage = 5;
+                } else if (currentPage >= totalPages - 3) {
+                    // 当前页靠近结尾
+                    startPage = totalPages - 4;
+                    endPage = totalPages;
+                } else {
+                    // 当前页在中间
+                    startPage = currentPage - 2;
+                    endPage = currentPage + 2;
+                }
+            }
+
+            // 第一页
+            if (startPage > 1) {
+                html += `<button onclick="goToPage(1)" ${1 === currentPage ? 'class="active"' : ''}>1</button>`;
+                if (startPage > 2) {
+                    html += `<span class="page-ellipsis">...</span>`;
+                }
+            }
+
+            // 中间页码
+            for (let i = startPage; i <= endPage; i++) {
+                html += `<button onclick="goToPage(${i})" ${i === currentPage ? 'class="active"' : ''}>${i}</button>`;
+            }
+
+            // 最后一页
+            if (endPage < totalPages) {
+                if (endPage < totalPages - 1) {
+                    html += `<span class="page-ellipsis">...</span>`;
+                }
+                html += `<button onclick="goToPage(${totalPages})" ${totalPages === currentPage ? 'class="active"' : ''}>${totalPages}</button>`;
+            }
+
+            // 下一页按钮
+            html += `<button onclick="goToPage(${currentPage + 1})" ${currentPage === totalPages ? 'disabled' : ''} title="下一页">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <polyline points="9 18 15 12 9 6"></polyline>
+                </svg>
+            </button>`;
+
+            pagination.innerHTML = html;
+        }
+
+        function goToPage(page) {
+            const totalPages = Math.ceil(filteredApplications.length / pageSize);
+            if (page < 1 || page > totalPages) return;
+            currentPage = page;
+            renderTable();
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
+        // 改变每页显示条数
+        function changePageSize(newSize) {
+            const oldPageSize = pageSize;
+            pageSize = parseInt(newSize);
+
+            // 计算新的当前页，尽量保持显示的数据范围不变
+            const currentFirstItem = (currentPage - 1) * oldPageSize + 1;
+            currentPage = Math.ceil(currentFirstItem / pageSize);
+
+            // 确保页码在有效范围内
+            const totalPages = Math.ceil(filteredApplications.length / pageSize);
+            if (currentPage > totalPages) {
+                currentPage = totalPages || 1;
+            }
+
+            // 保存用户偏好到本地存储
+            localStorage.setItem('applicationsPageSize', pageSize);
+
+            renderTable();
+        }
+
+        // 跳转到指定页
+        function jumpToPage() {
+            const input = document.getElementById('pageJumpInput');
+            const page = parseInt(input.value);
+            const totalPages = Math.ceil(filteredApplications.length / pageSize);
+
+            if (isNaN(page) || page < 1) {
+                alert('请输入有效的页码');
+                return;
+            }
+
+            if (page > totalPages) {
+                alert(`页码超出范围，最大页码为 ${totalPages}`);
+                return;
+            }
+
+            goToPage(page);
+            input.value = ''; // 清空输入框
+        }
+
+        // 处理页码跳转输入框的回车事件
+        function handlePageJumpKeypress(event) {
+            if (event.key === 'Enter') {
+                jumpToPage();
+            }
+        }
+        
+        // ==================== 查看详情 ====================
+        async function viewDetail(id) {
+            console.log('viewDetail 被调用, id:', id, '类型:', typeof id);
+            console.log('allApplications:', allApplications);
+            // 使用宽松比较，处理字符串和数字类型的id
+            const app = allApplications.find(a => String(a.id) === String(id));
+            console.log('找到的应用:', app);
+            if (!app) {
+                console.error('未找到应用, id:', id);
+                alert('未找到该应聘信息');
+                return;
+            }
+            
+            const dynamicFields = app.dynamic_fields || app.form_data || app.fields || {};
+            const modalBody = document.getElementById('modalBody');
+            
+            // 辅助函数：获取字段值（支持多种字段名格式，同时检查动态字段和数据库直接字段）
+            function getFieldValue(...fieldNames) {
+                for (const name of fieldNames) {
+                    // 首先检查动态字段
+                    if (dynamicFields[name] !== undefined && dynamicFields[name] !== '') {
+                        return dynamicFields[name];
+                    }
+                    // 然后检查数据库记录的直接字段
+                    if (app[name] !== undefined && app[name] !== '') {
+                        return app[name];
+                    }
+                }
+                return '';
+            }
+            
+            let html = `
+                <div class="detail-section">
+                    <h3>👤 基本信息</h3>
+                    <div class="detail-grid">
+                        <div class="detail-item">
+                            <label>姓名</label>
+                            <span>${app.name || getFieldValue('name', 'Name') || '-'}</span>
+                        </div>
+                        <div class="detail-item">
+                            <label>性别</label>
+                            <span>${getFieldValue('gender', 'Gender') || '-'}</span>
+                        </div>
+                        <div class="detail-item">
+                            <label>电话</label>
+                            <span>${app.phone || getFieldValue('phone', 'Phone') || '-'}</span>
+                        </div>
+                        <div class="detail-item">
+                            <label>年龄</label>
+                            <span>${getFieldValue('age', 'Age') || '-'} 岁</span>
+                        </div>
+                        <div class="detail-item">
+                            <label>应聘岗位</label>
+                            <span>${app.position || getFieldValue('position', 'Position') || '-'}</span>
+                        </div>
+                        <div class="detail-item">
+                            <label>工种</label>
+                            <span>${(() => {
+                                let jobType = getFieldValue('job_type', 'job type', 'Job Type', '工种', '工种类型', '应聘工种', 'jobType', 'job');
+                                if (!jobType) {
+                                    for (const key in dynamicFields) {
+                                        const lowerKey = key.toLowerCase();
+                                        if (lowerKey.includes('job') || lowerKey.includes('工种') || lowerKey.includes('type')) {
+                                            if (dynamicFields[key] && dynamicFields[key] !== '') {
+                                                jobType = dynamicFields[key];
+                                                break;
+                                            }
+                                        }
+                                    }
+                                }
+                                // 如果还是没找到，尝试从 form_data 中查找 "应聘工种" 或 "工种" 字段（中文标签）
+                                if (!jobType) {
+                                    for (const key in dynamicFields) {
+                                        if (key.includes('工种') || key === '应聘工种') {
+                                            if (dynamicFields[key] && dynamicFields[key] !== '') {
+                                                jobType = dynamicFields[key];
+                                                break;
+                                            }
+                                        }
+                                    }
+                                }
+                                return jobType || '-';
+                            })()}</span>
+                        </div>
+                        <div class="detail-item">
+                            <label>学历</label>
+                            <span>${app.education || getFieldValue('education', 'Education') || '-'}</span>
+                        </div>
+                        <div class="detail-item">
+                            <label>工作经验</label>
+                            <span>${app.experience || getFieldValue('experience', 'Experience') || '-'}</span>
+                        </div>
+                        <div class="detail-item">
+                            <label>婚姻状况</label>
+                            <span>${getFieldValue('marital status', 'marital_status', 'Marital Status', '婚姻状况') || '-'}</span>
+                        </div>
+                    </div>
+                </div>
+            `;
+            
+            // 工作经历
+            if (dynamicFields.work_experience && Array.isArray(dynamicFields.work_experience) && dynamicFields.work_experience.length > 0) {
+                html += `
+                    <div class="detail-section">
+                        <h3>💼 工作经历</h3>
+                `;
+                dynamicFields.work_experience.forEach((exp, idx) => {
+                    html += `
+                        <div style="background:#f8f9ff;padding:15px;border-radius:8px;margin-bottom:10px;">
+                            <h4 style="margin:0 0 10px 0;color:#667eea;">工作经历 #${idx + 1}</h4>
+                            <div class="detail-grid">
+                                <div class="detail-item">
+                                    <label>公司名称</label>
+                                    <span>${exp.company || '-'}</span>
+                                </div>
+                                <div class="detail-item">
+                                    <label>职位</label>
+                                    <span>${exp.position || '-'}</span>
+                                </div>
+                                <div class="detail-item">
+                                    <label>工作时间</label>
+                                    <span>${exp.startDate || '-'} 至 ${exp.isCurrent ? '至今' : (exp.endDate || '-')}</span>
+                                </div>
+                                <div class="detail-item">
+                                    <label>离职原因</label>
+                                    <span>${exp.leaveReason || '-'}</span>
+                                </div>
+                            </div>
+                            ${exp.responsibilities ? `
+                                <div style="margin-top:10px;">
+                                    <label>主要工作内容</label>
+                                    <p style="margin:5px 0 0 0;color:#666;">${exp.responsibilities}</p>
+                                </div>
+                            ` : ''}
+                        </div>
+                    `;
+                });
+                html += '</div>';
+            }
+            
+            // 面试预约信息
+            if (app.booking) {
+                html += `
+                    <div class="detail-section">
+                        <h3>📅 面试预约</h3>
+                        <div class="detail-grid">
+                            <div class="detail-item">
+                                <label>申请日期</label>
+                                <span>${app.booking.booking_date || '-'}</span>
+                            </div>
+                            <div class="detail-item">
+                                <label>面试时段</label>
+                                <span>${TIME_SLOTS[app.booking.time_slot]?.label || app.booking.time_slot || '-'}</span>
+                            </div>
+                            <div class="detail-item">
+                                <label>预约状态</label>
+                                <span>${app.booking.status === 'confirmed' ? '已确认' : (app.booking.status === 'cancelled' ? '已取消' : '待确认')}</span>
+                            </div>
+                            <div class="detail-item">
+                                <label>预约时间</label>
+                                <span>${new Date(app.booking.created_at).toLocaleString('zh-CN')}</span>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }
+            
+            // 其他字段（排除已在基本信息中显示的字段，包括多种可能的字段名格式）
+            const excludedFields = [
+                // 基本信息 - 小写
+                'name', 'gender', 'phone', 'age', 'position', 'education', 'experience', 'marital_status',
+                // 基本信息 - 首字母大写
+                'Name', 'Gender', 'Phone', 'Age', 'Position', 'Education', 'Experience', 'Marital Status',
+                // 工作经历
+                'work_experience', 'Work Experience', 'Work_Experience',
+                // 其他常见字段
+                'job_type', 'Job Type', 'Job_Type',
+                'source_channel', 'Source_channel', 'Source Channel',
+                'referrer', 'Referrer',
+                'self_introduction', 'Self_introduction', 'Self Introduction',
+                'technical_skills', 'Technical_skills', 'Technical Skills'
+            ];
+            const otherFields = Object.keys(dynamicFields).filter(key => !excludedFields.includes(key));
+            
+            if (otherFields.length > 0) {
+                html += `
+                    <div class="detail-section">
+                        <h3>📝 其他信息</h3>
+                        <div class="detail-grid">
+                `;
+                otherFields.forEach(key => {
+                    const value = dynamicFields[key];
+                    if (value && value !== '') {
+                        html += `
+                            <div class="detail-item">
+                                <label>${translateFieldName(key)}</label>
+                                <span>${formatFieldValue(value)}</span>
+                            </div>
+                        `;
+                    }
+                });
+                html += '</div></div>';
+            }
+            
+            modalBody.innerHTML = html;
+            const modal = document.getElementById('detailModal');
+            console.log('显示弹窗:', modal);
+            if (modal) {
+                modal.classList.add('show');
+                console.log('弹窗已显示');
+            } else {
+                console.error('未找到弹窗元素 detailModal');
+            }
+        }
+        
+        function closeModal() {
+            document.getElementById('detailModal').classList.remove('show');
+        }
+        
+        // ==================== 字段翻译和格式化 ====================
+        function translateFieldName(fieldName) {
+            const translations = {
+                // 基本信息
+                'name': '姓名',
+                'Name': '姓名',
+                'gender': '性别',
+                'Gender': '性别',
+                'phone': '电话',
+                'Phone': '电话',
+                'age': '年龄',
+                'Age': '年龄',
+                'position': '应聘岗位',
+                'Position': '应聘岗位',
+                'education': '学历',
+                'Education': '学历',
+                'experience': '工作经验',
+                'Experience': '工作经验',
+                'marital_status': '婚姻状况',
+                'Marital Status': '婚姻状况',
+                'job_type': '岗位类型',
+                'Job Type': '岗位类型',
+                'work_experience': '工作经历',
+                'Work Experience': '工作经历',
+                
+                // 招聘相关
+                'recruitment_channel': '招聘渠道',
+                'source_channel': '招聘渠道',
+                'Source_channel': '招聘渠道',
+                'referrer': '推荐人',
+                'Referrer': '推荐人',
+                
+                // 薪资相关
+                'expected_salary': '期望薪资',
+                'expected salary': '期望薪资',
+                'Expected Salary': '期望薪资',
+                'expected_salary_range': '期望薪资范围',
+                'current_salary': '目前薪资',
+                'current salary': '目前薪资',
+                'Current Salary': '目前薪资',
+                'current_salary_range': '目前薪资范围',
+                
+                // 个人评价
+                'self_evaluation': '自我评价',
+                'Self_evaluation': '自我评价',
+                'hobbies': '兴趣爱好',
+                'Hobbies': '兴趣爱好',
+                
+                // 联系信息
+                'address': '现居地址',
+                'Address': '现居地址',
+                'emergency_contact': '紧急联系人',
+                'Emergency_contact': '紧急联系人',
+                'emergency_phone': '紧急联系电话',
+                'Emergency_phone': '紧急联系电话',
+                'id_card': '身份证号',
+                'ID_card': '身份证号',
+                'email': '电子邮箱',
+                'Email': '电子邮箱',
+                
+                // 其他字段
+                'graduation_status': '毕业状态',
+                'Graduation Status': '毕业状态',
+                'GraduationStatus': '毕业状态',
+                'environment_contact': '环境接触',
+                'environment contact': '环境接触',
+                'Environment Contact': '环境接触',
+                'environment_contact_history': '环境接触史',
+                'spring_festival_days': '春节假期天数',
+                'spring festival days': '春节假期天数',
+                'Spring Festival Days': '春节假期天数',
+                'shift_work': '是否接受倒班',
+                'shift work': '是否接受倒班',
+                'Shift work': '是否接受倒班',
+                'Shift Work': '是否接受倒班',
+                'working_hours': '工作时长',
+                'commute_time': '通勤时间',
+                'living_arrangement': '住宿安排',
+                'dormitory_preference': '宿舍偏好',
+                'meal_arrangement': '用餐安排',
+                'smoking_status': '吸烟状况',
+                'drinking_status': '饮酒状况',
+                'health_status': '健康状况',
+                'vision_status': '视力状况',
+                'color_blindness': '色盲色弱',
+                'physical_limitations': '身体限制',
+                'allergies': '过敏史',
+                'medical_history': '病史',
+                'vaccination_status': '疫苗接种',
+                'computer_skills': '电脑技能',
+                'software_skills': '软件技能',
+                'language_skills': '语言能力',
+                'certificates': '证书资质',
+                
+                // 技术岗位字段
+                'skill_level': '技能水平',
+                'skill level': '技能水平',
+                'Skill Level': '技能水平',
+                'daily_average_output': '日均产量',
+                'daily_average_output': '日均产量',
+                'daily average output': '日均产量',
+                'Daily average output': '日均产量',
+                'Daily Average Output': '日均产量',
+                'DAILY_AVERAGE_OUTPUT': '日均产量',
+                'specialized_techniques': '专业技术',
+                'specialized techniques': '专业技术',
+                'Specialized techniques': '专业技术',
+                'Specialized Techniques': '专业技术',
+                'SPECIALIZED_TECHNIQUES': '专业技术',
+                'proficient_products': '熟练产品',
+                'proficient products': '熟练产品',
+                'Proficient Products': '熟练产品',
+                'equipment_operation': '设备操作',
+                'equipment operation': '设备操作',
+                'Equipment Operation': '设备操作',
+                'quality_control': '质量控制',
+                'quality control': '质量控制',
+                'Quality Control': '质量控制',
+                'production_efficiency': '生产效率',
+                'production efficiency': '生产效率',
+                'Production Efficiency': '生产效率',
+                'technical_certificates': '技术证书',
+                'technical certificates': '技术证书',
+                'Technical Certificates': '技术证书',
+                'related_experience': '相关经验',
+                'related experience': '相关经验',
+                'Related Experience': '相关经验',
+                
+                'training_experience': '培训经历',
+                'award_history': '获奖经历',
+                'disciplinary_record': '违纪记录',
+                'criminal_record': '犯罪记录',
+                'credit_status': '信用状况',
+                'family_status': '家庭状况',
+                'spouse_status': '配偶状况',
+                'children_status': '子女状况',
+                'parents_status': '父母状况',
+                'siblings_status': '兄弟姐妹状况',
+                'family_in_local': '本地亲属',
+                'previous_visit': '是否来过',
+                'interview_experience': '面试经历',
+                'application_history': '应聘历史',
+                'blacklist_status': '黑名单状态',
+                'special_skills': '特殊技能',
+                'management_experience': '管理经验',
+                'teamwork_ability': '团队协作',
+                'communication_skills': '沟通能力',
+                'learning_ability': '学习能力',
+                'pressure_resistance': '抗压能力',
+                'stability': '稳定性',
+                'career_planning': '职业规划',
+                'salary_expectations': '薪资期望',
+                'benefit_expectations': '福利期望',
+                'work_environment_expectations': '工作环境期望',
+                'development_expectations': '发展期望',
+                'availability': '到岗时间',
+                'notice_period': '离职通知期',
+                'interview_availability': '面试时间',
+                'transportation': '交通方式',
+                'distance': '距离',
+                'weather_concerns': '天气顾虑',
+                'seasonal_preference': '季节偏好',
+                'overtime_willingness': '加班意愿',
+                'business_trip_willingness': '出差意愿',
+                'relocation_willingness': '调动意愿',
+                'training_willingness': '培训意愿',
+                'probation_expectations': '试用期期望',
+                'contract_expectations': '合同期望',
+                'insurance_expectations': '保险期望',
+                'holiday_expectations': '假期期望',
+                'bonus_expectations': '奖金期望',
+                'raise_expectations': '加薪期望',
+                'promotion_expectations': '晋升期望',
+                'other_expectations': '其他期望',
+                'remarks': '备注',
+                'Notes': '备注',
+                'internal_notes': '内部备注',
+                'source_remarks': '来源备注',
+                'interview_remarks': '面试备注',
+                'follow_up_remarks': '跟进备注'
+            };
+            // 首先尝试精确匹配
+            if (translations[fieldName]) {
+                return translations[fieldName];
+            }
+            // 尝试不区分大小写匹配
+            const lowerFieldName = fieldName.toLowerCase();
+            for (const [key, value] of Object.entries(translations)) {
+                if (key.toLowerCase() === lowerFieldName) {
+                    return value;
+                }
+            }
+            // 尝试去除空格后的匹配
+            const normalizedFieldName = fieldName.toLowerCase().replace(/\s+/g, '_');
+            for (const [key, value] of Object.entries(translations)) {
+                const normalizedKey = key.toLowerCase().replace(/\s+/g, '_');
+                if (normalizedKey === normalizedFieldName) {
+                    return value;
+                }
+            }
+            // 如果没有找到匹配，返回原字段名（首字母大写格式）
+            return fieldName;
+        }
+        
+        function formatFieldValue(value, isExport = false) {
+            if (Array.isArray(value)) {
+                // 如果是工作经历数组，格式化为字符串
+                if (value.length > 0 && typeof value[0] === 'object' && value[0].company) {
+                    if (isExport) {
+                        // 导出模式：详细格式
+                        return value.map((exp, idx) => {
+                            const parts = [];
+                            parts.push(`【经历${idx + 1}】`);
+                            parts.push(`公司：${exp.company || '-'}`);
+                            parts.push(`职位：${exp.position || '-'}`);
+                            parts.push(`时间：${exp.startDate || ''} 至 ${exp.isCurrent ? '至今' : (exp.endDate || '')}`);
+                            if (exp.responsibilities) parts.push(`工作内容：${exp.responsibilities}`);
+                            if (exp.leaveReason) parts.push(`离职原因：${exp.leaveReason}`);
+                            return parts.join(' | ');
+                        }).join('; ');
+                    } else {
+                        // 显示模式：简洁格式
+                        return value.map(exp => {
+                            const period = `${exp.startDate || ''} 至 ${exp.isCurrent ? '至今' : (exp.endDate || '')}`;
+                            return `${exp.company || ''} (${exp.position || ''}, ${period})`;
+                        }).join('; ');
+                    }
+                }
+                return value.join(', ');
+            }
+            if (typeof value === 'object' && value !== null) {
+                // 如果是单个工作经历对象
+                if (value.company) {
+                    if (isExport) {
+                        // 导出模式：详细格式
+                        const parts = [];
+                        parts.push(`公司：${value.company || '-'}`);
+                        parts.push(`职位：${value.position || '-'}`);
+                        parts.push(`时间：${value.startDate || ''} 至 ${value.isCurrent ? '至今' : (value.endDate || '')}`);
+                        if (value.responsibilities) parts.push(`工作内容：${value.responsibilities}`);
+                        if (value.leaveReason) parts.push(`离职原因：${value.leaveReason}`);
+                        return parts.join(' | ');
+                    } else {
+                        // 显示模式：简洁格式
+                        const period = `${value.startDate || ''} 至 ${value.isCurrent ? '至今' : (value.endDate || '')}`;
+                        return `${value.company} (${value.position || ''}, ${period})`;
+                    }
+                }
+                // 其他对象类型，尝试提取有用的信息
+                const entries = Object.entries(value).map(([k, v]) => {
+                    if (typeof v === 'object') return null;
+                    return `${translateFieldName(k)}: ${v}`;
+                }).filter(Boolean);
+                if (entries.length > 0) {
+                    return entries.join(', ');
+                }
+                return JSON.stringify(value);
+            }
+            return value || '-';
+        }
+        
+        // ==================== 状态更新 ====================
+        async function updateStatus(id, newStatus) {
+            const statusText = newStatus === 'processed' ? '处理' : '拒绝';
+            if (!confirm(`确定要${statusText}该应聘申请吗？`)) return;
+            
+            try {
+                // 更新数据库中的状态
+                const { error } = await supabaseClient.from('applications').update({ 
+                    status: newStatus, 
+                    updated_at: new Date().toISOString() 
+                }).eq('id', id);
+                
+                if (error) {
+                    throw error;
+                }
+                
+                // 刷新数据
+                await loadData();
+                alert('操作成功！');
+            } catch (e) {
+                console.error('状态更新失败:', e);
+                alert('操作失败: ' + (e.message || '未知错误'));
+            }
+        }
+        
+        // ==================== 删除 ====================
+        async function deleteApplication(id, name) {
+            if (!confirm(`确定要删除应聘人 "${name}" 的申请记录吗？\n\n此操作将同时删除关联的预约记录和招聘流程数据，且不可恢复！`)) return;
+            
+            try {
+                // 记录操作日志
+                await logOperation('delete', 'applications', id, `删除应聘记录: ${name}`, { name });
+                
+                // 1. 先删除关联的招聘流程记录
+                const { error: rpError } = await supabaseClient.from('recruitment_process').delete().eq('application_id', id);
+                if (rpError) {
+                    console.warn('删除关联招聘流程记录失败:', rpError);
+                    // 继续删除其他记录，不阻止流程
+                } else {
+                    console.log('成功删除关联的招聘流程记录');
+                }
+                
+                // 2. 删除关联的预约记录
+                const { error: bookingError } = await supabaseClient.from('bookings').delete().eq('application_id', id);
+                if (bookingError) {
+                    console.warn('删除关联预约记录失败:', bookingError);
+                    // 继续删除申请记录，不阻止流程
+                } else {
+                    console.log('成功删除关联的预约记录');
+                }
+                
+                // 3. 删除申请记录
+                const { error } = await supabaseClient.from('applications').delete().eq('id', id);
+                if (error) {
+                    throw error;
+                }
+                
+                // 刷新数据
+                await loadData();
+                alert('删除成功！已同步删除关联的预约和招聘流程数据。');
+            } catch (e) {
+                console.error('删除失败:', e);
+                alert('删除失败: ' + (e.message || '未知错误'));
+            }
+        }
+        
+        // ==================== 导出Excel ====================
+        async function exportToExcel() {
+            // 检查是否有选中的记录
+            const checkedCheckboxes = document.querySelectorAll('.row-checkbox:checked');
+            let appsToExport = [];
+            
+            if (checkedCheckboxes.length > 0) {
+                // 如果有选中的记录，只导出选中的记录
+                const selectedIds = Array.from(checkedCheckboxes).map(cb => cb.value);
+                appsToExport = filteredApplications.filter(app => selectedIds.includes(String(app.id)));
+                console.log('导出选中记录:', appsToExport.length, '条');
+            } else {
+                // 如果没有选中的记录，导出所有筛选后的数据
+                appsToExport = filteredApplications;
+                console.log('导出所有记录:', appsToExport.length, '条');
+            }
+            
+            if (appsToExport.length === 0) {
+                alert('没有可导出的数据');
+                return;
+            }
+            
+            const overlay = document.getElementById('progressOverlay');
+            const progressBar = document.getElementById('progressBar');
+            const progressText = document.getElementById('progressText');
+            const progressTitle = document.getElementById('progressTitle');
+            
+            progressTitle.textContent = '正在导出数据...';
+            overlay.classList.add('show');
+            
+            try {
+                const statusMap = { 'pending': '待处理', 'processed': '已处理', 'rejected': '已拒绝' };
+                const bookingStatusMap = { 'pending': '待确认', 'confirmed': '已确认', 'cancelled': '已取消' };
+                
+                const exportData = appsToExport.map((app, index) => {
+                    const dynamicFields = app.dynamic_fields || app.form_data || app.fields || {};
+                    
+                    // 辅助函数：获取字段值（支持多种字段名格式，同时检查动态字段和数据库直接字段）
+                    function getFieldValue(...fieldNames) {
+                        for (const name of fieldNames) {
+                            // 首先检查动态字段
+                            if (dynamicFields[name] !== undefined && dynamicFields[name] !== '') {
+                                return dynamicFields[name];
+                            }
+                            // 然后检查数据库记录的直接字段
+                            if (app[name] !== undefined && app[name] !== '') {
+                                return app[name];
+                            }
+                        }
+                        return '';
+                    }
+                    
+                    const data = {
+                        '序号': index + 1,
+                        '姓名': app.name || getFieldValue('name', 'Name') || '-',
+                        '性别': getFieldValue('gender', 'Gender') || '-',
+                        '年龄': getFieldValue('age', 'Age') || '-',
+                        '应聘岗位': app.position || getFieldValue('position', 'Position') || '-',
+                        '工种': (() => {
+                            let jobType = getFieldValue('job_type', 'job type', 'Job Type', '工种', '工种类型', '应聘工种', 'jobType', 'job');
+                            if (!jobType) {
+                                for (const key in dynamicFields) {
+                                    const lowerKey = key.toLowerCase();
+                                    if (lowerKey.includes('job') || lowerKey.includes('工种') || lowerKey.includes('type')) {
+                                        if (dynamicFields[key] && dynamicFields[key] !== '') {
+                                            jobType = dynamicFields[key];
+                                            break;
+                                        }
+                                    }
+                                }
+                            }
+                            // 如果还是没找到，尝试从 form_data 中查找 "应聘工种" 或 "工种" 字段（中文标签）
+                            if (!jobType) {
+                                for (const key in dynamicFields) {
+                                    if (key.includes('工种') || key === '应聘工种') {
+                                        if (dynamicFields[key] && dynamicFields[key] !== '') {
+                                            jobType = dynamicFields[key];
+                                            break;
+                                        }
+                                    }
+                                }
+                            }
+                            return jobType || '-';
+                        })(),
+                        '学历': app.education || getFieldValue('education', 'Education') || '-',
+                        '电话': app.phone || getFieldValue('phone', 'Phone') || '-',
+                        '婚姻状况': getFieldValue('marital status', 'marital_status', 'Marital Status', '婚姻状况') || '-',
+                        '申请日期': app.booking ? app.booking.booking_date : '未预约',
+                        '面试时段': app.booking ? (TIME_SLOTS[app.booking.time_slot]?.label || app.booking.time_slot) : '-',
+                        '预约状态': app.booking ? (bookingStatusMap[app.booking.status] || app.booking.status) : '未预约',
+                        '应聘状态': statusMap[app.status] || '待处理',
+                        '面试日期': new Date(app.created_at).toLocaleString('zh-CN')
+                    };
+                    
+                    // 添加其他动态字段
+                    const excludedFields = [
+                        'name', 'Name', 'gender', 'Gender', 'phone', 'Phone', 'age', 'Age',
+                        'position', 'Position', 'education', 'Education', 'experience', 'Experience',
+                        'marital_status', 'marital status', 'Marital Status'
+                    ];
+                    Object.keys(dynamicFields).forEach(key => {
+                        if (!excludedFields.includes(key)) {
+                            const label = translateFieldName(key);
+                            // 导出时使用详细格式（isExport=true）
+                            data[label] = formatFieldValue(dynamicFields[key], true);
+                        }
+                    });
+                    
+                    // 更新进度
+                    const progress = Math.round(((index + 1) / filteredApplications.length) * 100);
+                    progressBar.style.width = progress + '%';
+                    progressText.textContent = progress + '%';
+                    
+                    return data;
+                });
+                
+                // 创建工作簿
+                const ws = XLSX.utils.json_to_sheet(exportData);
+                const wb = XLSX.utils.book_new();
+                XLSX.utils.book_append_sheet(wb, ws, '应聘信息');
+                
+                // 设置列宽
+                const colWidths = [
+                    { wch: 8 }, { wch: 12 }, { wch: 15 }, { wch: 8 }, { wch: 8 },
+                    { wch: 15 }, { wch: 12 }, { wch: 12 }, { wch: 12 }, { wch: 15 },
+                    { wch: 20 }, { wch: 12 }, { wch: 12 }, { wch: 20 }, { wch: 12 }
+                ];
+                ws['!cols'] = colWidths;
+                
+                // 下载文件
+                const fileName = `应聘信息_${new Date().toISOString().split('T')[0]}.xlsx`;
+                XLSX.writeFile(wb, fileName);
+                
+                setTimeout(() => {
+                    overlay.classList.remove('show');
+                    alert('导出成功！');
+                }, 500);
+                
+            } catch (e) {
+                overlay.classList.remove('show');
+                alert('导出失败: ' + e.message);
+            }
+        }
+        
+        // ==================== 全选功能 ====================
+        function toggleSelectAll(checkbox) {
+            const checkboxes = document.querySelectorAll('.row-checkbox');
+            checkboxes.forEach(cb => cb.checked = checkbox.checked);
+            updateBatchDeleteButton();
+        }
+        
+        // 更新批量删除按钮状态
+        function updateBatchDeleteButton() {
+            const checkboxes = document.querySelectorAll('.row-checkbox:checked');
+            const batchDeleteBtn = document.getElementById('batchDeleteBtn');
+            if (batchDeleteBtn) {
+                batchDeleteBtn.disabled = checkboxes.length === 0;
+                batchDeleteBtn.textContent = `🗑️ 批量删除 (${checkboxes.length})`;
+            }
+        }
+        
+        // 监听单个复选框变化
+        document.addEventListener('change', function(e) {
+            if (e.target.classList.contains('row-checkbox')) {
+                updateBatchDeleteButton();
+                // 更新全选框状态
+                const allCheckboxes = document.querySelectorAll('.row-checkbox');
+                const checkedCheckboxes = document.querySelectorAll('.row-checkbox:checked');
+                const selectAllCheckbox = document.getElementById('selectAll');
+                if (selectAllCheckbox) {
+                    selectAllCheckbox.checked = checkedCheckboxes.length === allCheckboxes.length && allCheckboxes.length > 0;
+                    selectAllCheckbox.indeterminate = checkedCheckboxes.length > 0 && checkedCheckboxes.length < allCheckboxes.length;
+                }
+            }
+        });
+        
+        // ==================== 批量删除 ====================
+        async function batchDelete() {
+            const checkboxes = document.querySelectorAll('.row-checkbox:checked');
+            if (checkboxes.length === 0) {
+                alert('请先选择要删除的记录');
+                return;
+            }
+            
+            const ids = Array.from(checkboxes).map(cb => cb.value);
+            const names = Array.from(checkboxes).map(cb => {
+                const row = cb.closest('tr');
+                return row ? row.cells[1].textContent : '';
+            });
+            
+            if (!confirm(`确定要删除选中的 ${ids.length} 条应聘记录吗？\n\n此操作不可恢复！`)) {
+                return;
+            }
+            
+            const overlay = document.getElementById('progressOverlay');
+            const progressBar = document.getElementById('progressBar');
+            const progressText = document.getElementById('progressText');
+            const progressTitle = document.getElementById('progressTitle');
+            
+            progressTitle.textContent = '正在删除数据...';
+            overlay.classList.add('show');
+            progressBar.style.width = '0%';
+            progressText.textContent = '0%';
+            
+            let successCount = 0;
+            let failCount = 0;
+            const errors = [];
+            
+            for (let i = 0; i < ids.length; i++) {
+                try {
+                    const id = ids[i];
+                    const name = names[i] || '';
+                    
+                    // 记录操作日志
+                    await logOperation('batch_delete', 'applications', id, `批量删除应聘记录: ${name}`, { name, batchIndex: i + 1, batchTotal: ids.length });
+                    
+                    // 1. 先删除关联的招聘流程记录
+                    try {
+                        await supabaseClient.from('recruitment_process').delete().eq('application_id', id);
+                    } catch (e) {
+                        console.warn('删除关联招聘流程记录失败:', e);
+                    }
+                    
+                    // 2. 删除关联的预约记录
+                    try {
+                        await supabaseClient.from('bookings').delete().eq('application_id', id);
+                    } catch (e) {
+                        console.warn('删除关联预约记录失败:', e);
+                    }
+                    
+                    // 3. 删除申请记录
+                    const { error } = await supabaseClient.from('applications').delete().eq('id', id);
+                    if (error) {
+                        throw error;
+                    }
+                    successCount++;
+                } catch (e) {
+                    failCount++;
+                    errors.push(`${names[i] || ids[i]}: ${e.message}`);
+                    console.error('删除失败:', e);
+                }
+                
+                // 更新进度
+                const progress = Math.round(((i + 1) / ids.length) * 100);
+                progressBar.style.width = progress + '%';
+                progressText.textContent = `${progress}% (${i + 1}/${ids.length})`;
+            }
+            
+            setTimeout(() => {
+                overlay.classList.remove('show');
+                
+                // 刷新数据
+                loadData();
+                
+                // 显示结果
+                if (failCount === 0) {
+                    alert(`删除成功！共删除 ${successCount} 条记录。`);
+                } else {
+                    alert(`删除完成！\n成功: ${successCount} 条\n失败: ${failCount} 条\n\n失败详情:\n${errors.slice(0, 5).join('\n')}${errors.length > 5 ? '\n...' : ''}`);
+                }
+            }, 500);
+        }
+        
+        // ==================== 操作日志记录 ====================
+        async function logOperation(operationType, tableName, recordId, description, details = {}) {
+            try {
+                // 获取当前用户信息
+                const currentUser = JSON.parse(localStorage.getItem('currentUser') || '{}');
+                const userName = currentUser.username || currentUser.name || '未知用户';
+                
+                const logEntry = {
+                    operation_type: operationType,
+                    table_name: tableName,
+                    record_id: String(recordId),
+                    description: description,
+                    details: details,
+                    operator: userName,
+                    operation_time: new Date().toISOString(),
+                    user_agent: navigator.userAgent,
+                    ip_address: 'client-side' // 服务端可以获取真实IP
+                };
+                
+                // 尝试写入操作日志表（如果存在）
+                try {
+                    const { error } = await supabaseClient.from('operation_logs').insert(logEntry);
+                    if (error) {
+                        // 如果表不存在或其他错误，仅记录到控制台
+                        console.log('操作日志:', logEntry);
+                    } else {
+                        console.log('✅ 操作日志已记录:', description);
+                    }
+                } catch (e) {
+                    // 表可能不存在，记录到控制台
+                    console.log('操作日志:', logEntry);
+                }
+            } catch (e) {
+                console.error('记录操作日志失败:', e);
+            }
+        }
+        
+        // ==================== 调试功能 ====================
+        function showDebugInfo() {
+            console.log('========== 调试信息 ==========');
+            console.log('当前显示数据:', allApplications.length, '条');
+            console.log('Supabase 状态:', supabaseClient ? '已初始化' : '未初始化');
+            
+            if (allApplications.length > 0) {
+                console.log('应聘信息示例:', allApplications[0]);
+            }
+            
+            // 显示调试弹窗
+            let html = `
+                <div class="detail-section">
+                    <h3>📊 数据状态</h3>
+                    <div class="detail-grid">
+                        <div class="detail-item">
+                            <label>数据库应聘信息</label>
+                            <span>${allApplications.length} 条</span>
+                        </div>
+                        <div class="detail-item">
+                            <label>Supabase 状态</label>
+                            <span>${supabaseClient ? '✅ 已初始化' : '❌ 未初始化'}</span>
+                        </div>
+                        <div class="detail-item">
+                            <label>当前用户角色</label>
+                            <span>${getCurrentUserRole()}</span>
+                        </div>
+                        <div class="detail-item">
+                            <label>数据更新时间</label>
+                            <span>${new Date().toLocaleString('zh-CN')}</span>
+                        </div>
+                    </div>
+                </div>
+            `;
+            
+            if (allApplications.length > 0) {
+                html += `
+                    <div class="detail-section">
+                        <h3>📝 最近应聘信息</h3>
+                        <div style="max-height: 300px; overflow-y: auto;">
+                `;
+                allApplications.slice(0, 10).forEach((app, idx) => {
+                    html += `
+                        <div style="background:#f8f9ff;padding:10px;border-radius:6px;margin-bottom:8px;font-size:12px;">
+                            <strong>#${idx + 1} ${app.id}</strong><br>
+                            姓名: ${app.name || '-'} | 电话: ${app.phone || '-'} | 岗位: ${app.position || '-'}<br>
+                            状态: ${app.status || 'pending'} | 时间: ${app.created_at ? new Date(app.created_at).toLocaleString('zh-CN') : '-'}
+                        </div>
+                    `;
+                });
+                html += '</div></div>';
+            }
+            
+            document.getElementById('modalBody').innerHTML = html;
+            document.getElementById('detailModal').classList.add('show');
+        }
+        
+        // 获取当前用户角色
+        function getCurrentUserRole() {
+            try {
+                const userStr = localStorage.getItem('currentUser');
+                if (userStr) {
+                    const user = JSON.parse(userStr);
+                    return user.role || '未知';
+                }
+            } catch (e) {
+                console.error('获取用户角色失败:', e);
+            }
+            return '未登录';
+        }
+        
+        // ==================== 页面加载 ====================
+        document.addEventListener('DOMContentLoaded', async function() {
+            // 恢复用户每页显示条数偏好
+            const savedPageSize = localStorage.getItem('applicationsPageSize');
+            if (savedPageSize) {
+                const pageSizeSelector = document.getElementById('pageSizeSelector');
+                if (pageSizeSelector) {
+                    pageSizeSelector.value = savedPageSize;
+                }
+            }
+
+            initSupabase();
+            await loadFilterOptions();
+            await loadData();
+            
+            // 添加调试快捷键 (Ctrl + Shift + D)
+            document.addEventListener('keydown', function(e) {
+                if (e.ctrlKey && e.shiftKey && e.key === 'D') {
+                    e.preventDefault();
+                    showDebugInfo();
+                }
+            });
+            
+            // 点击弹窗外部关闭
+            document.getElementById('detailModal').addEventListener('click', function(e) {
+                if (e.target === this) {
+                    closeModal();
+                }
+            });
+            
+            // 表格操作按钮事件委托
+            document.addEventListener('click', function(e) {
+                const btn = e.target.closest('.action-btn');
+                if (!btn) return;
+                
+                const action = btn.dataset.action;
+                const id = btn.dataset.id;
+                const name = btn.dataset.name;
+                
+                console.log('按钮点击:', { action, id, name });
+                
+                if (!action || !id) {
+                    console.log('缺少action或id，不处理');
+                    return;
+                }
+                
+                e.preventDefault();
+                e.stopPropagation();
+                
+                switch (action) {
+                    case 'view':
+                        console.log('执行查看详情:', id);
+                        viewDetail(id);
+                        break;
+                    case 'process':
+                        updateStatus(id, 'processed');
+                        break;
+                    case 'reject':
+                        updateStatus(id, 'rejected');
+                        break;
+                    case 'delete':
+                        deleteApplication(id, name);
+                        break;
+                }
+            });
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,1264 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>面试预约状态查询 - 义齿工厂招聘</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+        
+        .container {
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            width: 100%;
+            max-width: 500px;
+            padding: 40px;
+            text-align: center;
+        }
+        
+        .logo {
+            font-size: 48px;
+            margin-bottom: 15px;
+        }
+        
+        h1 {
+            font-size: 24px;
+            color: #333;
+            margin-bottom: 8px;
+        }
+        
+        .subtitle {
+            color: #666;
+            font-size: 14px;
+            margin-bottom: 30px;
+        }
+        
+        /* 查询表单 */
+        .query-form {
+            margin-bottom: 30px;
+        }
+        
+        .input-group {
+            margin-bottom: 20px;
+            text-align: left;
+        }
+        
+        .input-group label {
+            display: block;
+            font-size: 14px;
+            color: #333;
+            margin-bottom: 8px;
+            font-weight: 500;
+        }
+        
+        .input-group input {
+            width: 100%;
+            padding: 14px 16px;
+            border: 2px solid #e0e0e0;
+            border-radius: 10px;
+            font-size: 16px;
+            transition: all 0.3s;
+        }
+        
+        .input-group input:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+        
+        .input-group input::placeholder {
+            color: #aaa;
+        }
+        
+        .btn-query {
+            width: 100%;
+            padding: 14px 24px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 10px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+        
+        .btn-query:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 20px rgba(102, 126, 234, 0.4);
+        }
+        
+        .btn-query:disabled {
+            opacity: 0.7;
+            cursor: not-allowed;
+        }
+        
+        .btn-query .spinner {
+            width: 18px;
+            height: 18px;
+            border: 2px solid rgba(255,255,255,0.3);
+            border-top-color: white;
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+        }
+        
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+        
+        /* 状态结果卡片 */
+        .result-card {
+            display: none;
+            margin-top: 20px;
+            padding: 24px;
+            border-radius: 12px;
+            text-align: left;
+            animation: fadeIn 0.4s ease;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        .result-card.show {
+            display: block;
+        }
+        
+        .result-card.pending {
+            background: #fffbe6;
+            border: 2px solid #ffd666;
+        }
+        
+        .result-card.confirmed {
+            background: #f6ffed;
+            border: 2px solid #95de64;
+        }
+        
+        .result-card.cancelled {
+            background: #fff2f0;
+            border: 2px solid #ff7875;
+        }
+        
+        .result-card.not-found {
+            background: #f5f5f5;
+            border: 2px solid #d9d9d9;
+        }
+        
+        .status-header {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 16px;
+        }
+        
+        .status-icon {
+            width: 48px;
+            height: 48px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+        }
+        
+        .pending .status-icon {
+            background: #ffd666;
+        }
+        
+        .confirmed .status-icon {
+            background: #95de64;
+        }
+        
+        .cancelled .status-icon {
+            background: #ff7875;
+        }
+        
+        .not-found .status-icon {
+            background: #d9d9d9;
+        }
+        
+        .status-title {
+            flex: 1;
+        }
+        
+        .status-title h3 {
+            font-size: 18px;
+            color: #333;
+            margin-bottom: 4px;
+        }
+        
+        .status-title p {
+            font-size: 13px;
+            color: #666;
+        }
+        
+        .status-badge {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+        
+        .pending .status-badge {
+            background: #ffd666;
+            color: #874d00;
+        }
+        
+        .confirmed .status-badge {
+            background: #95de64;
+            color: #135200;
+        }
+        
+        .cancelled .status-badge {
+            background: #ff7875;
+            color: #820014;
+        }
+        
+        .info-list {
+            margin-top: 16px;
+        }
+        
+        .info-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 10px 0;
+            border-bottom: 1px solid rgba(0,0,0,0.06);
+        }
+        
+        .info-item:last-child {
+            border-bottom: none;
+        }
+        
+        .info-label {
+            font-size: 13px;
+            color: #666;
+        }
+        
+        .info-value {
+            font-size: 14px;
+            color: #333;
+            font-weight: 500;
+        }
+        
+        /* 提示信息 */
+        .tips {
+            margin-top: 24px;
+            padding: 16px;
+            background: #f8f9ff;
+            border-radius: 10px;
+            text-align: left;
+        }
+        
+        .tips h4 {
+            font-size: 14px;
+            color: #333;
+            margin-bottom: 8px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        
+        .tips ul {
+            list-style: none;
+            font-size: 13px;
+            color: #666;
+        }
+        
+        .tips li {
+            padding: 4px 0;
+            padding-left: 16px;
+            position: relative;
+        }
+        
+        .tips li::before {
+            content: '•';
+            position: absolute;
+            left: 4px;
+            color: #667eea;
+        }
+        
+        /* 底部导航 */
+        .footer-nav {
+            margin-top: 30px;
+            padding-top: 20px;
+            border-top: 1px solid #e8e8e8;
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+        }
+        
+        .footer-nav a {
+            color: #667eea;
+            text-decoration: none;
+            font-size: 14px;
+            transition: color 0.3s;
+        }
+        
+        .footer-nav a:hover {
+            color: #764ba2;
+            text-decoration: underline;
+        }
+        
+        .footer {
+            margin-top: 20px;
+            color: #999;
+            font-size: 12px;
+        }
+        
+        /* 扩展功能占位区 */
+        .extension-area {
+            margin-top: 20px;
+            padding: 16px;
+            background: #f0f5ff;
+            border: 2px dashed #91caff;
+            border-radius: 10px;
+            text-align: center;
+        }
+        
+        .extension-area h4 {
+            font-size: 14px;
+            color: #1890ff;
+            margin-bottom: 8px;
+        }
+        
+        .extension-area p {
+            font-size: 12px;
+            color: #666;
+        }
+        
+        /* 错误提示 */
+        .error-message {
+            display: none;
+            margin-top: 16px;
+            padding: 12px 16px;
+            background: #fff2f0;
+            border: 1px solid #ffccc7;
+            border-radius: 8px;
+            color: #cf1322;
+            font-size: 14px;
+            animation: shake 0.4s ease;
+        }
+        
+        .error-message.show {
+            display: block;
+        }
+        
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            25% { transform: translateX(-5px); }
+            75% { transform: translateX(5px); }
+        }
+        
+        /* 图片保存按钮 */
+        .save-image-btn {
+            display: none;
+            margin-top: 20px;
+            padding: 12px 24px;
+            background: linear-gradient(135deg, #52c41a 0%, #389e0d 100%);
+            color: white;
+            border: none;
+            border-radius: 10px;
+            font-size: 15px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            width: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+        
+        .save-image-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 20px rgba(82, 196, 26, 0.4);
+        }
+        
+        .save-image-btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+        
+        .save-image-btn .spinner {
+            width: 16px;
+            height: 16px;
+            border: 2px solid rgba(255,255,255,0.3);
+            border-top-color: white;
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+        }
+        
+        /* 图片格式选择器 */
+        .format-selector {
+            display: none;
+            margin-top: 12px;
+            padding: 12px;
+            background: #f6ffed;
+            border-radius: 8px;
+            text-align: left;
+        }
+        
+        .format-selector.show {
+            display: block;
+        }
+        
+        .format-selector label {
+            font-size: 13px;
+            color: #333;
+            margin-right: 12px;
+            font-weight: 500;
+        }
+        
+        .format-selector select {
+            padding: 8px 12px;
+            border: 2px solid #95de64;
+            border-radius: 6px;
+            font-size: 14px;
+            background: white;
+            cursor: pointer;
+        }
+        
+        .format-selector select:focus {
+            outline: none;
+            border-color: #52c41a;
+        }
+        
+        /* 成功提示 */
+        .success-toast {
+            position: fixed;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%) translateY(-100px);
+            background: #52c41a;
+            color: white;
+            padding: 14px 28px;
+            border-radius: 8px;
+            font-size: 15px;
+            font-weight: 500;
+            box-shadow: 0 4px 20px rgba(82, 196, 26, 0.3);
+            z-index: 1000;
+            opacity: 0;
+            transition: all 0.3s ease;
+        }
+        
+        .success-toast.show {
+            transform: translateX(-50%) translateY(0);
+            opacity: 1;
+        }
+        
+        /* 图片预览模态框 */
+        .image-preview-modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.8);
+            z-index: 999;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+        
+        .image-preview-modal.show {
+            display: flex;
+        }
+        
+        .image-preview-content {
+            background: white;
+            border-radius: 12px;
+            padding: 20px;
+            max-width: 90%;
+            max-height: 90%;
+            overflow: auto;
+            text-align: center;
+        }
+        
+        .image-preview-content img {
+            max-width: 100%;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        }
+        
+        .image-preview-content h3 {
+            margin-bottom: 15px;
+            color: #333;
+        }
+        
+        .preview-actions {
+            margin-top: 15px;
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+        }
+        
+        .preview-actions button {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: all 0.3s;
+        }
+        
+        .btn-download {
+            background: #52c41a;
+            color: white;
+        }
+        
+        .btn-download:hover {
+            background: #389e0d;
+        }
+        
+        .btn-cancel {
+            background: #f0f0f0;
+            color: #666;
+        }
+        
+        .btn-cancel:hover {
+            background: #e0e0e0;
+        }
+        
+        /* 响应式 */
+        @media (max-width: 480px) {
+            .container {
+                padding: 30px 20px;
+            }
+            
+            h1 {
+                font-size: 20px;
+            }
+            
+            .status-header {
+                flex-wrap: wrap;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="logo">🔍</div>
+        <h1>面试预约状态查询</h1>
+        <p class="subtitle">输入您的姓名和手机号，查询面试预约状态</p>
+        
+        <!-- 查询表单 -->
+        <div class="query-form">
+            <div class="input-group">
+                <label for="queryName">姓名</label>
+                <input type="text" id="queryName" placeholder="请输入您的姓名" maxlength="20">
+            </div>
+            <div class="input-group">
+                <label for="queryPhone">手机号</label>
+                <input type="tel" id="queryPhone" placeholder="请输入您的手机号" maxlength="11">
+            </div>
+            <button class="btn-query" id="btnQuery" onclick="queryStatus()">
+                <span>查询状态</span>
+            </button>
+        </div>
+        
+        <!-- 错误提示 -->
+        <div class="error-message" id="errorMessage"></div>
+        
+        <!-- 查询结果 -->
+        <div class="result-card" id="resultCard">
+            <div class="status-header">
+                <div class="status-icon" id="statusIcon">⏳</div>
+                <div class="status-title">
+                    <h3 id="statusTitle">查询结果</h3>
+                    <p id="statusDesc">正在处理中</p>
+                </div>
+                <span class="status-badge" id="statusBadge">待确认</span>
+            </div>
+            <div class="info-list" id="infoList">
+                <!-- 动态生成 -->
+            </div>
+            
+            <!-- 图片格式选择器 -->
+            <div class="format-selector" id="formatSelector">
+                <label for="imageFormat">图片格式：</label>
+                <select id="imageFormat">
+                    <option value="png">PNG（高清）</option>
+                    <option value="jpeg">JPEG（压缩）</option>
+                </select>
+            </div>
+            
+            <!-- 保存为图片按钮 -->
+            <button class="save-image-btn" id="saveImageBtn" onclick="generateAndSaveImage()" style="display: none;">
+                <span>📷</span>
+                <span>保存为图片</span>
+            </button>
+        </div>
+        
+        <!-- 扩展功能占位区（面试结果查询） -->
+        <div class="extension-area" id="interviewResultExtension" style="display: none;">
+            <h4>📝 面试结果查询</h4>
+            <p>该功能正在开发中，敬请期待...</p>
+        </div>
+        
+        <!-- 使用提示 -->
+        <div class="tips" id="tipsSection">
+            <h4 id="tipsTitle">💡 温馨提示</h4>
+            <ul id="tipsList">
+                <li>请确保输入的姓名和手机号与预约时填写的一致</li>
+                <li>预约提交后，工作人员会在1-2个工作日内审核</li>
+                <li>如有疑问，请联系招聘热线：xxx-xxxx-xxxx</li>
+            </ul>
+        </div>
+        
+        <!-- 底部导航 -->
+        <div class="footer-nav">
+            <a href="index.html">🏠 返回首页</a>
+            <a href="candidate-form-complete.html">📝 填写应聘信息</a>
+            <a href="booking.html">📅 预约面试</a>
+        </div>
+        
+        <div class="footer">
+            <p>© 招聘系统</p>
+        </div>
+    </div>
+    
+    <!-- 成功提示 -->
+    <div class="success-toast" id="successToast">图片保存成功！</div>
+    
+    <!-- 图片预览模态框 -->
+    <div class="image-preview-modal" id="imagePreviewModal">
+        <div class="image-preview-content">
+            <h3>图片预览</h3>
+            <img id="previewImage" src="" alt="预约状态">
+            <div class="preview-actions">
+                <button class="btn-download" onclick="downloadImage()">💾 下载图片</button>
+                <button class="btn-cancel" onclick="closeImagePreview()">取消</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Supabase 配置
+        const SUPABASE_URL = 'https://dxrghlqnwfwpuxjvyisv.supabase.co';
+        const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImR4cmdobHFud2Z3cHV4anZ5aXN2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQ2ODYyMjAsImV4cCI6MjA5MDI2MjIyMH0.r6hDrTVZ1p_Qq6sHuLeBEo3SFqGEh0trwbRMXLWnrNQ';
+        
+        let db = null;
+        
+        // 初始化 Supabase
+        async function initSupabase() {
+            try {
+                db = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+                console.log('Supabase 初始化成功');
+                return true;
+            } catch (error) {
+                console.error('Supabase 初始化失败:', error);
+                showError('系统初始化失败，请刷新页面重试');
+                return false;
+            }
+        }
+        
+        // 页面加载完成后初始化
+        document.addEventListener('DOMContentLoaded', async function() {
+            // 等待数据库初始化完成
+            const initialized = await initSupabase();
+            if (initialized) {
+                // 加载温馨提示配置
+                await loadTipsConfig();
+            }
+            // 检查是否有从成功页面传来的参数
+            checkAndFillFromURL();
+        });
+        
+        // 检查URL参数并自动填充
+        function checkAndFillFromURL() {
+            const params = new URLSearchParams(window.location.search);
+            const name = params.get('name');
+            const phone = params.get('phone');
+            
+            if (name && phone) {
+                document.getElementById('queryName').value = name;
+                document.getElementById('queryPhone').value = phone;
+                // 自动查询
+                queryStatus();
+            }
+        }
+        
+        // 加载温馨提示配置
+        async function loadTipsConfig() {
+            try {
+                if (!db) {
+                    console.log('数据库未初始化，使用默认提示');
+                    return;
+                }
+                
+                console.log('正在加载温馨提示配置...');
+                
+                // 尝试使用 ilike 进行不区分大小写的查询
+                let configs = [];
+                
+                // 方法1: 使用 in 查询
+                let { data: data1, error: error1 } = await db
+                    .from('system_config')
+                    .select('*')
+                    .in('config_key', ['status_query_tips_title', 'status_query_tips_content']);
+                
+                if (error1) {
+                    console.error('方法1查询失败:', error1);
+                    
+                    // 方法2: 使用 or 查询
+                    let { data: data2, error: error2 } = await db
+                        .from('system_config')
+                        .select('*')
+                        .or('config_key.eq.status_query_tips_title,config_key.eq.status_query_tips_content');
+                    
+                    if (error2) {
+                        console.error('方法2查询失败:', error2);
+                        
+                        // 方法3: 查询所有配置，然后过滤
+                        let { data: data3, error: error3 } = await db
+                            .from('system_config')
+                            .select('*');
+                        
+                        if (error3) {
+                            console.error('方法3查询失败:', error3);
+                            return;
+                        } else {
+                            configs = (data3 || []).filter(c => 
+                                c.config_key === 'status_query_tips_title' || 
+                                c.config_key === 'status_query_tips_content'
+                            );
+                        }
+                    } else {
+                        configs = data2 || [];
+                    }
+                } else {
+                    configs = data1 || [];
+                }
+                
+                console.log('获取到的配置:', configs);
+                
+                let title = '💡 温馨提示';
+                let content = '';
+                
+                if (configs && configs.length > 0) {
+                    configs.forEach(config => {
+                        console.log('处理配置:', config.config_key, '=', config.config_value);
+                        if (config.config_key === 'status_query_tips_title') {
+                            title = config.config_value || title;
+                        } else if (config.config_key === 'status_query_tips_content') {
+                            content = config.config_value || '';
+                        }
+                    });
+                } else {
+                    console.log('未找到自定义配置，使用默认提示');
+                }
+                
+                console.log('最终标题:', title);
+                console.log('最终内容:', content);
+                
+                // 更新标题
+                const tipsTitle = document.getElementById('tipsTitle');
+                if (tipsTitle) {
+                    tipsTitle.textContent = title;
+                }
+                
+                // 更新内容列表
+                const tipsList = document.getElementById('tipsList');
+                if (tipsList && content) {
+                    // 支持多种分隔符：换行符、竖线、分号
+                    let lines = [];
+                    if (content.indexOf('\n') !== -1) {
+                        lines = content.split('\n');
+                    } else if (content.indexOf('|') !== -1) {
+                        lines = content.split('|');
+                    } else if (content.indexOf('；') !== -1) {
+                        lines = content.split('；');
+                    } else if (content.indexOf(';') !== -1) {
+                        lines = content.split(';');
+                    } else {
+                        lines = [content];
+                    }
+                    
+                    lines = lines.filter(line => line.trim());
+                    
+                    if (lines.length > 0) {
+                        tipsList.innerHTML = lines.map(line => 
+                            `<li>${line.trim()}</li>`
+                        ).join('');
+                        console.log('已更新提示列表，共', lines.length, '条');
+                    }
+                }
+                
+                console.log('温馨提示配置加载完成');
+            } catch (e) {
+                console.error('加载温馨提示配置失败:', e);
+            }
+        }
+        
+        // 查询状态
+        async function queryStatus() {
+            const nameInput = document.getElementById('queryName');
+            const phoneInput = document.getElementById('queryPhone');
+            const btnQuery = document.getElementById('btnQuery');
+            const errorMessage = document.getElementById('errorMessage');
+            
+            const name = nameInput.value.trim();
+            const phone = phoneInput.value.trim();
+            
+            // 验证输入
+            if (!name) {
+                showError('请输入姓名');
+                nameInput.focus();
+                return;
+            }
+            
+            if (!phone) {
+                showError('请输入手机号');
+                phoneInput.focus();
+                return;
+            }
+            
+            if (!/^1[3-9]\d{9}$/.test(phone)) {
+                showError('请输入正确的手机号格式');
+                phoneInput.focus();
+                return;
+            }
+            
+            // 显示加载状态
+            btnQuery.disabled = true;
+            btnQuery.innerHTML = '<div class="spinner"></div><span>查询中...</span>';
+            errorMessage.classList.remove('show');
+            
+            // 检查数据库是否已初始化
+            if (!db) {
+                showError('系统初始化失败，请刷新页面重试');
+                btnQuery.disabled = false;
+                btnQuery.innerHTML = '<span>查询状态</span>';
+                return;
+            }
+            
+            try {
+                // 从 bookings 表查询预约信息
+                const { data: bookings, error: bookingError } = await db
+                    .from('bookings')
+                    .select('*')
+                    .eq('name', name)
+                    .eq('phone', phone)
+                    .order('created_at', { ascending: false })
+                    .limit(1);
+                
+                if (bookingError) throw bookingError;
+                
+                if (bookings && bookings.length > 0) {
+                    // 显示预约状态
+                    showBookingResult(bookings[0]);
+                } else {
+                    // 没有预约记录，尝试从 applications 表查询应聘信息
+                    const { data: applications, error: appError } = await db
+                        .from('applications')
+                        .select('*')
+                        .eq('name', name)
+                        .eq('phone', phone)
+                        .order('created_at', { ascending: false })
+                        .limit(1);
+                    
+                    if (appError) throw appError;
+                    
+                    if (applications && applications.length > 0) {
+                        showNoBookingResult(applications[0]);
+                    } else {
+                        showNotFoundResult();
+                    }
+                }
+                
+            } catch (error) {
+                console.error('查询失败:', error);
+                showError('查询失败，请稍后重试');
+            } finally {
+                // 恢复按钮状态
+                btnQuery.disabled = false;
+                btnQuery.innerHTML = '<span>查询状态</span>';
+            }
+        }
+        
+        // 当前生成的图片数据
+        let currentImageData = null;
+        
+        // 显示预约状态结果
+        function showBookingResult(booking) {
+            const resultCard = document.getElementById('resultCard');
+            const statusIcon = document.getElementById('statusIcon');
+            const statusTitle = document.getElementById('statusTitle');
+            const statusDesc = document.getElementById('statusDesc');
+            const statusBadge = document.getElementById('statusBadge');
+            const infoList = document.getElementById('infoList');
+            const saveImageBtn = document.getElementById('saveImageBtn');
+            const formatSelector = document.getElementById('formatSelector');
+            
+            // 清除之前的样式
+            resultCard.className = 'result-card show';
+            
+            // 根据状态设置样式
+            const statusConfig = {
+                pending: {
+                    className: 'pending',
+                    icon: '⏳',
+                    title: '预约审核中',
+                    desc: '您的面试预约已提交，正在等待工作人员审核',
+                    badge: '待确认',
+                    badgeColor: '#874d00'
+                },
+                confirmed: {
+                    className: 'confirmed',
+                    icon: '✅',
+                    title: '预约已确认',
+                    desc: '您的面试预约已通过审核，请准时参加',
+                    badge: '已确认',
+                    badgeColor: '#135200'
+                },
+                cancelled: {
+                    className: 'cancelled',
+                    icon: '❌',
+                    title: '预约已取消',
+                    desc: '您的面试预约已被取消，如有疑问请联系招聘方',
+                    badge: '已取消',
+                    badgeColor: '#820014'
+                }
+            };
+            
+            const config = statusConfig[booking.status] || statusConfig.pending;
+            
+            resultCard.classList.add(config.className);
+            statusIcon.textContent = config.icon;
+            statusTitle.textContent = config.title;
+            statusDesc.textContent = config.desc;
+            statusBadge.textContent = config.badge;
+            
+            // 时段映射
+            const timeSlotMap = {
+                'slot_1': '上午场 09:00-10:00',
+                'slot_2': '上午场 10:00-10:30',
+                'slot_3': '下午场 13:00-14:00',
+                'slot_4': '下午场 14:00-15:00',
+                'slot_5': '下午场 15:00-15:30'
+            };
+            
+            // 生成信息列表
+            const infoItems = [
+                { label: '姓名', value: booking.name },
+                { label: '应聘岗位', value: booking.position || '-' },
+                { label: '面试日期', value: booking.booking_date },
+                { label: '面试时段', value: timeSlotMap[booking.time_slot] || booking.time_slot },
+                { label: '提交时间', value: formatDateTime(booking.created_at) }
+            ];
+            
+            if (booking.status === 'cancelled' && booking.notes) {
+                infoItems.push({ label: '取消原因', value: booking.notes });
+            }
+            
+            infoList.innerHTML = infoItems.map(item => `
+                <div class="info-item">
+                    <span class="info-label">${item.label}</span>
+                    <span class="info-value">${item.value}</span>
+                </div>
+            `).join('');
+            
+            // 如果预约已确认，显示面试结果查询扩展区域
+            if (booking.status === 'confirmed') {
+                document.getElementById('interviewResultExtension').style.display = 'block';
+            } else {
+                document.getElementById('interviewResultExtension').style.display = 'none';
+            }
+            
+            // 显示保存图片按钮和格式选择器
+            if (saveImageBtn) {
+                saveImageBtn.style.display = 'flex';
+            }
+            if (formatSelector) {
+                formatSelector.classList.add('show');
+            }
+        }
+        
+        // 显示未预约但有应聘信息的结果
+        function showNoBookingResult(application) {
+            const resultCard = document.getElementById('resultCard');
+            const statusIcon = document.getElementById('statusIcon');
+            const statusTitle = document.getElementById('statusTitle');
+            const statusDesc = document.getElementById('statusDesc');
+            const statusBadge = document.getElementById('statusBadge');
+            const infoList = document.getElementById('infoList');
+            
+            resultCard.className = 'result-card show not-found';
+            statusIcon.textContent = '📝';
+            statusTitle.textContent = '尚未预约面试';
+            statusDesc.textContent = '您已提交应聘信息，但尚未预约面试时间';
+            statusBadge.textContent = '未预约';
+            statusBadge.style.background = '#d9d9d9';
+            statusBadge.style.color = '#595959';
+            
+            infoList.innerHTML = `
+                <div class="info-item">
+                    <span class="info-label">姓名</span>
+                    <span class="info-value">${application.name}</span>
+                </div>
+                <div class="info-item">
+                    <span class="info-label">应聘岗位</span>
+                    <span class="info-value">${application.position || '-'}</span>
+                </div>
+                <div class="info-item">
+                    <span class="info-label">提交时间</span>
+                    <span class="info-value">${formatDateTime(application.created_at)}</span>
+                </div>
+                <div class="info-item">
+                    <span class="info-label">操作</span>
+                    <span class="info-value"><a href="booking.html" style="color: #667eea;">立即预约面试 →</a></span>
+                </div>
+            `;
+            
+            document.getElementById('interviewResultExtension').style.display = 'none';
+        }
+        
+        // 显示未找到记录的结果
+        function showNotFoundResult() {
+            const resultCard = document.getElementById('resultCard');
+            const statusIcon = document.getElementById('statusIcon');
+            const statusTitle = document.getElementById('statusTitle');
+            const statusDesc = document.getElementById('statusDesc');
+            const statusBadge = document.getElementById('statusBadge');
+            const infoList = document.getElementById('infoList');
+            
+            resultCard.className = 'result-card show not-found';
+            statusIcon.textContent = '🔍';
+            statusTitle.textContent = '未找到记录';
+            statusDesc.textContent = '系统中没有找到您的应聘或预约信息';
+            statusBadge.textContent = '无记录';
+            statusBadge.style.background = '#d9d9d9';
+            statusBadge.style.color = '#595959';
+            
+            infoList.innerHTML = `
+                <div class="info-item">
+                    <span class="info-label">提示</span>
+                    <span class="info-value">请检查姓名和手机号是否输入正确</span>
+                </div>
+                <div class="info-item">
+                    <span class="info-label">操作</span>
+                    <span class="info-value"><a href="candidate-form-complete.html" style="color: #667eea;">填写应聘信息 →</a></span>
+                </div>
+            `;
+            
+            document.getElementById('interviewResultExtension').style.display = 'none';
+        }
+        
+        // 显示错误信息
+        function showError(message) {
+            const errorMessage = document.getElementById('errorMessage');
+            errorMessage.textContent = message;
+            errorMessage.classList.add('show');
+            setTimeout(() => {
+                errorMessage.classList.remove('show');
+            }, 3000);
+        }
+        
+        // 格式化日期时间
+        function formatDateTime(dateString) {
+            if (!dateString) return '-';
+            const date = new Date(dateString);
+            return date.toLocaleString('zh-CN', {
+                year: 'numeric',
+                month: '2-digit',
+                day: '2-digit',
+                hour: '2-digit',
+                minute: '2-digit'
+            });
+        }
+        
+        // ==================== 图片保存功能 ====================
+        
+        // 生成并保存图片
+        async function generateAndSaveImage() {
+            const resultCard = document.getElementById('resultCard');
+            const saveImageBtn = document.getElementById('saveImageBtn');
+            const format = document.getElementById('imageFormat').value;
+            
+            if (!resultCard || resultCard.style.display === 'none') {
+                showError('请先查询预约状态');
+                return;
+            }
+            
+            // 显示加载状态
+            saveImageBtn.disabled = true;
+            saveImageBtn.innerHTML = '<div class="spinner"></div><span>生成中...</span>';
+            
+            try {
+                // 使用 requestAnimationFrame 确保 UI 更新
+                await new Promise(resolve => requestAnimationFrame(resolve));
+                
+                // 配置 html2canvas 选项
+                const canvasOptions = {
+                    scale: 2, // 高清渲染
+                    useCORS: true, // 允许跨域图片
+                    allowTaint: true,
+                    backgroundColor: '#ffffff',
+                    logging: false,
+                    removeContainer: true,
+                    // 性能优化
+                    imageTimeout: 15000, // 图片加载超时
+                    onclone: function(clonedDoc) {
+                        // 克隆后的处理
+                        const clonedCard = clonedDoc.getElementById('resultCard');
+                        if (clonedCard) {
+                            clonedCard.style.display = 'block';
+                            clonedCard.style.animation = 'none';
+                            // 隐藏不需要的元素
+                            const formatSelector = clonedDoc.getElementById('formatSelector');
+                            const saveBtn = clonedDoc.getElementById('saveImageBtn');
+                            if (formatSelector) formatSelector.style.display = 'none';
+                            if (saveBtn) saveBtn.style.display = 'none';
+                        }
+                    }
+                };
+                
+                // 生成 canvas
+                const canvas = await html2canvas(resultCard, canvasOptions);
+                
+                // 转换为图片数据
+                const mimeType = format === 'jpeg' ? 'image/jpeg' : 'image/png';
+                const quality = format === 'jpeg' ? 0.9 : 1.0;
+                currentImageData = canvas.toDataURL(mimeType, quality);
+                
+                // 显示预览
+                showImagePreview(currentImageData);
+                
+            } catch (error) {
+                console.error('生成图片失败:', error);
+                showError('生成图片失败，请重试');
+            } finally {
+                // 恢复按钮状态
+                saveImageBtn.disabled = false;
+                saveImageBtn.innerHTML = '<span>📷</span><span>保存为图片</span>';
+            }
+        }
+        
+        // 显示图片预览
+        function showImagePreview(imageData) {
+            const modal = document.getElementById('imagePreviewModal');
+            const img = document.getElementById('previewImage');
+            
+            if (modal && img) {
+                img.src = imageData;
+                modal.classList.add('show');
+            }
+        }
+        
+        // 关闭图片预览
+        function closeImagePreview() {
+            const modal = document.getElementById('imagePreviewModal');
+            if (modal) {
+                modal.classList.remove('show');
+            }
+            currentImageData = null;
+        }
+        
+        // 下载图片
+        function downloadImage() {
+            if (!currentImageData) {
+                showError('图片数据不存在');
+                return;
+            }
+            
+            try {
+                const format = document.getElementById('imageFormat').value;
+                const timestamp = new Date().toISOString().slice(0, 10).replace(/-/g, '');
+                const filename = `面试预约状态_${timestamp}.${format}`;
+                
+                // 创建下载链接
+                const link = document.createElement('a');
+                link.href = currentImageData;
+                link.download = filename;
+                link.style.display = 'none';
+                document.body.appendChild(link);
+                
+                // 触发下载
+                link.click();
+                
+                // 清理
+                document.body.removeChild(link);
+                
+                // 关闭预览
+                closeImagePreview();
+                
+                // 显示成功提示
+                showSuccessToast('图片保存成功！');
+                
+            } catch (error) {
+                console.error('下载图片失败:', error);
+                showError('下载失败，请重试');
+            }
+        }
+        
+        // 显示成功提示
+        function showSuccessToast(message) {
+            const toast = document.getElementById('successToast');
+            if (toast) {
+                toast.textContent = message;
+                toast.classList.add('show');
+                
+                setTimeout(() => {
+                    toast.classList.remove('show');
+                }, 3000);
+            }
+        }
+        
+        // 点击模态框背景关闭
+        document.getElementById('imagePreviewModal')?.addEventListener('click', function(e) {
+            if (e.target === this) {
+                closeImagePreview();
+            }
+        });
+        
+        // 回车键提交
+        document.getElementById('queryName').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                // 如果手机号已填写，直接查询；否则聚焦到手机号输入框
+                const phone = document.getElementById('queryPhone').value.trim();
+                if (phone) {
+                    queryStatus();
+                } else {
+                    document.getElementById('queryPhone').focus();
+                }
+            }
+        });
+        
+        document.getElementById('queryPhone').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                queryStatus();
+            }
+        });
+        
+        // 手机号输入限制
+        document.getElementById('queryPhone').addEventListener('input', function(e) {
+            e.target.value = e.target.value.replace(/\D/g, '');
+        });
+    </script>
+</body>
+</html>

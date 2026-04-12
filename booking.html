@@ -1,0 +1,887 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>面试预约 - 招聘</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Microsoft YaHei", sans-serif;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      min-height: 100vh;
+      padding: 20px;
+    }
+    .container {
+      max-width: 800px;
+      margin: 0 auto;
+      background: white;
+      border-radius: 16px;
+      box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+      overflow: hidden;
+    }
+    .header {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      padding: 30px;
+      text-align: center;
+    }
+    .header h1 { font-size: 28px; margin-bottom: 10px; }
+    .header p { font-size: 16px; opacity: 0.9; }
+    .main-content { padding: 30px; }
+    .form-group { margin-bottom: 20px; }
+    .form-group label {
+      display: block;
+      margin-bottom: 8px;
+      font-weight: 600;
+      color: #333;
+      font-size: 14px;
+    }
+    .required { color: #e74c3c; margin-left: 4px; }
+    .form-group input, .form-group select, .form-group textarea {
+      width: 100%;
+      padding: 12px 16px;
+      border: 2px solid #e0e0e0;
+      border-radius: 8px;
+      font-size: 16px;
+    }
+    .form-group input:focus, .form-group select:focus {
+      outline: none;
+      border-color: #667eea;
+    }
+    .date-section { margin-bottom: 30px; }
+    .date-section h3 {
+      font-size: 18px;
+      color: #333;
+      margin-bottom: 15px;
+      padding-bottom: 10px;
+      border-bottom: 2px solid #f0f0f0;
+    }
+    .calendar-grid {
+      display: grid;
+      grid-template-columns: repeat(7, 1fr);
+      gap: 8px;
+    }
+    .calendar-header {
+      text-align: center;
+      font-weight: 600;
+      color: #666;
+      font-size: 12px;
+      padding: 8px 0;
+      background: #f8f9ff;
+      border-radius: 4px;
+    }
+    .calendar-day {
+      aspect-ratio: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      border: 2px solid #e0e0e0;
+      border-radius: 8px;
+      cursor: pointer;
+      background: white;
+      font-size: 14px;
+      transition: all 0.2s;
+    }
+    .calendar-day:hover:not(.disabled):not(.selected) {
+      border-color: #667eea;
+      background: #f8f9ff;
+    }
+    .calendar-day.selected {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      border-color: transparent;
+    }
+    .calendar-day.disabled {
+      background: #f5f5f5;
+      color: #ccc;
+      cursor: not-allowed;
+    }
+    .calendar-day .date { font-weight: 600; font-size: 16px; }
+    .calendar-day .month { font-size: 10px; opacity: 0.7; }
+    .time-slots {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 15px;
+    }
+    .time-slot {
+      padding: 20px;
+      border: 2px solid #e0e0e0;
+      border-radius: 12px;
+      cursor: pointer;
+      text-align: center;
+      transition: all 0.2s;
+    }
+    .time-slot:hover:not(.disabled):not(.selected) {
+      border-color: #667eea;
+      background: #f8f9ff;
+    }
+    .time-slot.selected {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      border-color: transparent;
+    }
+    .time-slot.disabled {
+      background: #f5f5f5;
+      color: #999;
+      cursor: not-allowed;
+    }
+    .time-slot .time { font-size: 16px; font-weight: 600; margin-bottom: 8px; }
+    .time-slot .capacity { font-size: 14px; }
+    .btn {
+      display: block;
+      width: 100%;
+      padding: 14px 32px;
+      font-size: 16px;
+      font-weight: 600;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+    }
+    .btn:disabled { opacity: 0.6; cursor: not-allowed; }
+    .alert {
+      padding: 15px 20px;
+      border-radius: 8px;
+      margin-bottom: 20px;
+      font-size: 14px;
+    }
+    .alert-info { background: #e3f2fd; color: #1565c0; border-left: 4px solid #1565c0; }
+    .alert-warning { background: #fff3e0; color: #e65100; border-left: 4px solid #e65100; }
+    .alert-error { background: #ffebee; color: #c62828; border-left: 4px solid #c62828; }
+    #loading {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(255,255,255,0.95);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-direction: column;
+      z-index: 9999;
+    }
+    #loading.hidden { display: none; }
+    .spinner {
+      width: 50px;
+      height: 50px;
+      border: 4px solid #f3f3f3;
+      border-top: 4px solid #667eea;
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+    }
+    @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+    #loading p { margin-top: 20px; color: #666; }
+    @media (max-width: 768px) {
+      .calendar-grid { gap: 4px; }
+      .calendar-day { font-size: 12px; }
+      .time-slots { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+  <div id="loading">
+    <div class="spinner"></div>
+    <p>正在加载系统...</p>
+  </div>
+
+  <div class="container">
+    <div class="header">
+      <div style="position: absolute; top: 20px; left: 20px;">
+        <button id="backBtn" style="background: rgba(255,255,255,0.2); border: 1px solid rgba(255,255,255,0.3); color: white; padding: 8px 16px; border-radius: 6px; cursor: pointer; font-size: 14px;">
+          ← 返回应聘信息
+        </button>
+      </div>
+      <h1>面试预约</h1>
+      <p>请填写以下信息完成面试预约</p>
+    </div>
+    
+    <div class="main-content">
+      <div class="alert alert-info" id="noticeBox">
+        <strong>预约须知：</strong>
+        <ul style="margin-top: 8px; padding-left: 20px;" id="noticeList">
+          <li>加载中...</li>
+        </ul>
+      </div>
+
+      <form id="bookingForm">
+        <div class="form-group">
+          <label>姓名 <span class="required">*</span></label>
+          <input type="text" id="name" placeholder="请输入您的姓名" maxlength="50">
+        </div>
+
+        <div class="form-group">
+          <label>联系电话 <span class="required">*</span></label>
+          <input type="tel" id="phone" placeholder="请输入您的手机号码" maxlength="11">
+        </div>
+
+        <div class="form-group">
+          <label>应聘岗位</label>
+          <select id="position">
+            <option value="">请选择岗位</option>
+          </select>
+        </div>
+
+        <div class="date-section">
+          <h3>选择面试日期 <span class="required">*</span></h3>
+          <div id="calendarGrid" class="calendar-grid"></div>
+        </div>
+
+        <div class="date-section">
+          <h3>选择面试时段 <span class="required">*</span></h3>
+          <div id="timeSlots" class="time-slots">
+            <div class="alert alert-warning">请先选择面试日期</div>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label>备注信息</label>
+          <textarea id="notes" rows="3" placeholder="如有特殊情况请在此说明（选填）" maxlength="200"></textarea>
+        </div>
+
+        <button type="submit" class="btn" id="submitBtn">提交预约</button>
+      </form>
+    </div>
+  </div>
+
+  <script>
+    var SUPABASE_URL = 'https://dxrghlqnwfwpuxjvyisv.supabase.co';
+    var SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImR4cmdobHFud2Z3cHV4anZ5aXN2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQ2ODYyMjAsImV4cCI6MjA5MDI2MjIyMH0.r6hDrTVZ1p_Qq6sHuLeBEo3SFqGEh0trwbRMXLWnrNQ';
+    
+    var WORKING_DAYS = [1, 2, 3, 4, 5]; // 周一到周五
+    var MAX_DAYS = 30;
+
+    var db = null;
+    var positions = [];
+    var timeSlots = [];
+    var selectedDate = null;
+    var selectedSlot = null;
+    var urlApplicationId = null;
+
+    function formatDate(d) {
+      var y = d.getFullYear();
+      var m = String(d.getMonth() + 1).padStart(2, '0');
+      var day = String(d.getDate()).padStart(2, '0');
+      return y + '-' + m + '-' + day;
+    }
+
+    // 检查是否已填写应聘信息
+    function checkApplicationCompleted() {
+      try {
+        // 1. 检查 URL 参数中是否有 application_id
+        var params = new URLSearchParams(window.location.search);
+        var urlApplicationId = params.get('application_id');
+        
+        // 2. 检查 localStorage 中是否有应聘信息
+        var candidateProfile = localStorage.getItem('candidateProfile');
+        var currentApplication = localStorage.getItem('currentApplication');
+        
+        // 3. 检查是否有从应聘页面传递的姓名和电话
+        var urlName = params.get('name');
+        var urlPhone = params.get('phone');
+        
+        // 如果有 application_id 或 candidateProfile，说明已填写应聘信息
+        if (urlApplicationId || candidateProfile || currentApplication || (urlName && urlPhone)) {
+          console.log('✅ 已填写应聘信息');
+          return true;
+        }
+        
+        // 未填写应聘信息，显示提示并跳转
+        console.log('❌ 未填写应聘信息，需要跳转到应聘页面');
+        
+        // 显示提示遮罩
+        var loadingDiv = document.getElementById('loading');
+        loadingDiv.innerHTML = `
+          <div style="text-align: center; padding: 40px;">
+            <div style="font-size: 60px; margin-bottom: 20px;">⚠️</div>
+            <h2 style="color: #333; margin-bottom: 15px;">请先填写应聘信息</h2>
+            <p style="color: #666; margin-bottom: 25px;">您需要先填写应聘信息后才能预约面试</p>
+            <p style="color: #999; font-size: 14px;">3秒后自动跳转到应聘信息填写页面...</p>
+          </div>
+        `;
+        loadingDiv.classList.remove('hidden');
+        
+        // 3秒后跳转到应聘信息填写页面
+        setTimeout(function() {
+          window.location.href = 'candidate-form-complete.html';
+        }, 3000);
+        
+        return false;
+      } catch (e) {
+        console.error('检查应聘信息状态失败:', e);
+        return true; // 出错时允许继续，避免阻塞正常流程
+      }
+    }
+
+    function loadSDK() {
+      var cdnList = [
+        'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js',
+        'https://unpkg.com/@supabase/supabase-js@2/dist/umd/supabase.min.js'
+      ];
+      var index = 0;
+
+      function tryLoad() {
+        if (index >= cdnList.length) {
+          document.getElementById('loading').innerHTML = '<p style="color:#c62828;">系统加载失败，请检查网络后刷新页面</p>';
+          return;
+        }
+        var script = document.createElement('script');
+        script.src = cdnList[index];
+        script.onload = function() { initApp(); };
+        script.onerror = function() { index++; tryLoad(); };
+        document.head.appendChild(script);
+      }
+      tryLoad();
+    }
+
+    async function initApp() {
+      db = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+      
+      // 检查是否已填写应聘信息
+      if (!checkApplicationCompleted()) {
+        return; // 未填写应聘信息，已显示提示并跳转
+      }
+      
+      // 加载配置
+      await loadConfig();
+      
+      // 初始化日历
+      initCalendar();
+
+      // 填充从应聘信息页面传递的数据
+      loadApplicationData();
+
+      // 绑定表单
+      document.getElementById('bookingForm').addEventListener('submit', onSubmit);
+
+      // 绑定返回按钮
+      document.getElementById('backBtn').addEventListener('click', function() {
+        // 从localStorage获取应用数据，保持状态
+        var candidateProfile = localStorage.getItem('candidateProfile');
+        if (candidateProfile) {
+          window.location.href = 'candidate-form-complete.html';
+        } else {
+          window.location.href = 'candidate-form-complete.html';
+        }
+      });
+
+      // 隐藏加载
+      document.getElementById('loading').classList.add('hidden');
+    }
+
+    function loadApplicationData() {
+      try {
+        // 1. 首先尝试从 URL 参数获取数据
+        var params = new URLSearchParams(window.location.search);
+        var urlName = params.get('name');
+        var urlPhone = params.get('phone');
+        var urlPosition = params.get('position');
+        var urlApplicationId = params.get('application_id');
+        
+        // 2. 从 localStorage 获取数据
+        var candidateProfile = localStorage.getItem('candidateProfile');
+        var profileData = candidateProfile ? JSON.parse(candidateProfile) : {};
+        
+        // 3. 合并数据（URL 参数优先）
+        var name = urlName || profileData.name || '';
+        var phone = urlPhone || profileData.phone || '';
+        var position = urlPosition || profileData.position || '';
+        
+        // 4. 填充表单
+        if (name) document.getElementById('name').value = decodeURIComponent(name);
+        if (phone) document.getElementById('phone').value = decodeURIComponent(phone);
+        
+        if (position) {
+          var positionSelect = document.getElementById('position');
+          var decodedPosition = decodeURIComponent(position);
+          
+          // 等待岗位列表加载完成后再选择，增加重试机制
+          var attempt = 0;
+          var maxAttempts = 10;
+          
+          function tryFillPosition() {
+            attempt++;
+            
+            // 检查岗位列表是否已加载
+            if (positionSelect.options.length > 1) {
+              // 岗位列表已加载，尝试填充
+              for (var i = 0; i < positionSelect.options.length; i++) {
+                if (positionSelect.options[i].value === decodedPosition) {
+                  positionSelect.selectedIndex = i;
+                  console.log('✅ 成功填充岗位:', decodedPosition);
+                  return;
+                }
+              }
+              
+              // 如果没有找到匹配的岗位，添加一个临时选项
+              var option = document.createElement('option');
+              option.value = decodedPosition;
+              option.textContent = decodedPosition;
+              positionSelect.appendChild(option);
+              positionSelect.selectedIndex = positionSelect.options.length - 1;
+              console.log('✅ 岗位不在列表中，添加临时选项:', decodedPosition);
+              return;
+            } else if (attempt < maxAttempts) {
+              // 岗位列表未加载，重试
+              setTimeout(tryFillPosition, 200);
+            } else {
+              // 多次尝试后仍未加载，添加临时选项
+              var option = document.createElement('option');
+              option.value = decodedPosition;
+              option.textContent = decodedPosition;
+              positionSelect.appendChild(option);
+              positionSelect.selectedIndex = positionSelect.options.length - 1;
+              console.log('✅ 岗位列表加载超时，添加临时选项:', decodedPosition);
+            }
+          }
+          
+          tryFillPosition();
+        }
+        
+        urlApplicationId = params.get('application_id');
+        console.log('✅ 已加载应聘信息:', { name: name, phone: phone, position: position, application_id: urlApplicationId });
+      } catch (e) {
+        console.error('加载应聘信息失败:', e);
+      }
+    }
+
+    async function loadConfig() {
+      try {
+        // 加载岗位
+        var posResult = await db.from('positions').select('*').eq('is_active', true).order('sort_order');
+        if (posResult.data && posResult.data.length > 0) {
+          positions = posResult.data;
+        } else {
+          // 使用默认岗位
+          positions = [
+            { id: 1, name: '设计师' },
+            { id: 2, name: 'CAD/CAM技术员' },
+            { id: 3, name: '模型制作员' },
+            { id: 4, name: '烤瓷技术员' },
+            { id: 5, name: '质检员' },
+            { id: 6, name: '生产主管' },
+            { id: 7, name: '其他' }
+          ];
+        }
+
+        // 填充岗位下拉框
+        var posSelect = document.getElementById('position');
+        posSelect.innerHTML = '<option value="">请选择岗位</option>';
+        for (var i = 0; i < positions.length; i++) {
+          var opt = document.createElement('option');
+          opt.value = positions[i].name;
+          opt.textContent = positions[i].name;
+          posSelect.appendChild(opt);
+        }
+
+        // 加载时段配置
+        var slotResult = await db.from('time_slots').select('*').eq('is_active', true).order('sort_order');
+        if (slotResult.data && slotResult.data.length > 0) {
+          timeSlots = slotResult.data;
+        } else {
+          // 使用默认时段
+          timeSlots = [
+            { slot_key: 'slot_1', label: '上午场 09:00-10:00', start_time: '09:00', end_time: '10:00', capacity: 10 },
+            { slot_key: 'slot_2', label: '上午场 10:00-10:30', start_time: '10:00', end_time: '10:30', capacity: 5 },
+            { slot_key: 'slot_3', label: '下午场 13:00-14:00', start_time: '13:00', end_time: '14:00', capacity: 10 },
+            { slot_key: 'slot_4', label: '下午场 14:00-15:00', start_time: '14:00', end_time: '15:00', capacity: 10 },
+            { slot_key: 'slot_5', label: '下午场 15:00-15:30', start_time: '15:00', end_time: '15:30', capacity: 5 }
+          ];
+        }
+
+        // 加载预约须知
+        var noticeResult = await db.from('system_config').select('*').eq('config_key', 'booking_notice');
+        if (noticeResult.data && noticeResult.data.length > 0) {
+          var notices = noticeResult.data[0].config_value.split('|');
+          var noticeList = document.getElementById('noticeList');
+          noticeList.innerHTML = '';
+          for (var i = 0; i < notices.length; i++) {
+            var li = document.createElement('li');
+            li.textContent = notices[i];
+            noticeList.appendChild(li);
+          }
+        }
+
+        // 加载横幅文本
+        var bannerResult = await db.from('system_config').select('*').eq('config_key', 'banner_booking');
+        if (bannerResult.data && bannerResult.data.length > 0 && bannerResult.data[0].config_value) {
+          document.querySelector('.header h1').textContent = bannerResult.data[0].config_value;
+        }
+
+      } catch (e) {
+        console.error('加载配置失败:', e);
+        // 使用默认值
+        positions = [
+          { id: 1, name: '设计师' },
+          { id: 2, name: 'CAD/CAM技术员' },
+          { id: 3, name: '模型制作员' },
+          { id: 4, name: '烤瓷技术员' },
+          { id: 5, name: '质检员' },
+          { id: 6, name: '生产主管' },
+          { id: 7, name: '其他' }
+        ];
+        timeSlots = [
+          { slot_key: 'slot_1', label: '上午场 09:00-10:00', capacity: 10 },
+          { slot_key: 'slot_2', label: '上午场 10:00-10:30', capacity: 5 },
+          { slot_key: 'slot_3', label: '下午场 13:00-14:00', capacity: 10 },
+          { slot_key: 'slot_4', label: '下午场 14:00-15:00', capacity: 10 },
+          { slot_key: 'slot_5', label: '下午场 15:00-15:30', capacity: 5 }
+        ];
+        
+        // 填充默认岗位
+        var posSelect = document.getElementById('position');
+        posSelect.innerHTML = '<option value="">请选择岗位</option>';
+        for (var i = 0; i < positions.length; i++) {
+          var opt = document.createElement('option');
+          opt.value = positions[i].name;
+          opt.textContent = positions[i].name;
+          posSelect.appendChild(opt);
+        }
+      }
+    }
+
+    function initCalendar() {
+      var grid = document.getElementById('calendarGrid');
+      grid.innerHTML = '';
+
+      var today = new Date();
+      today.setHours(0, 0, 0, 0);
+
+      // 星期标题 - 从周一开始
+      var weeks = ['一', '二', '三', '四', '五', '六', '日'];
+      for (var i = 0; i < weeks.length; i++) {
+        var h = document.createElement('div');
+        h.className = 'calendar-header';
+        h.textContent = weeks[i];
+        grid.appendChild(h);
+      }
+
+      // 计算第一天应该显示在哪个位置
+      // 找到下一个工作日作为起始日期
+      var startDate = new Date(today);
+      var dayOfWeek = startDate.getDay(); // 0=周日, 1=周一, ...
+      
+      // 转换为周一开始的索引 (0=周一, 6=周日)
+      var startDayIndex = dayOfWeek === 0 ? 6 : dayOfWeek - 1;
+
+      // 生成日期
+      var dates = [];
+      for (var i = 0; i < MAX_DAYS; i++) {
+        var d = new Date(today);
+        d.setDate(d.getDate() + i);
+        dates.push(d);
+      }
+
+      // 添加空白占位（使第一天对齐到正确的星期位置）
+      for (var i = 0; i < startDayIndex; i++) {
+        var empty = document.createElement('div');
+        empty.className = 'calendar-day disabled';
+        empty.style.visibility = 'hidden';
+        grid.appendChild(empty);
+      }
+
+      // 添加日期
+      for (var i = 0; i < dates.length; i++) {
+        var d = dates[i];
+        var dow = d.getDay(); // 0=周日, 1=周一, ...
+        var dateStr = formatDate(d);
+
+        var cell = document.createElement('div');
+        cell.className = 'calendar-day';
+        cell.setAttribute('data-date', dateStr);
+
+        var numDiv = document.createElement('div');
+        numDiv.className = 'date';
+        numDiv.textContent = d.getDate();
+
+        var monDiv = document.createElement('div');
+        monDiv.className = 'month';
+        monDiv.textContent = (d.getMonth() + 1) + '月';
+
+        cell.appendChild(numDiv);
+        cell.appendChild(monDiv);
+
+        // 判断是否工作日 (周一=1 到 周五=5)
+        var isWorkday = dow >= 1 && dow <= 5;
+        var isToday = i === 0;
+        var now = new Date();
+        
+        // 根据当前时间判断是否可预约
+        var tooLate = false;
+        if (isToday) {
+          // 如果当前时间已经超过15:30，今天不可预约
+          if (now.getHours() >= 15 && now.getMinutes() >= 30) {
+            tooLate = true;
+          } else if (now.getHours() >= 15) {
+            tooLate = true;
+          }
+        }
+
+        if (!isWorkday) {
+          cell.classList.add('disabled');
+          cell.title = '非工作日';
+        } else if (tooLate) {
+          cell.classList.add('disabled');
+          cell.title = '今日已无可预约时段';
+        } else {
+          cell.onclick = (function(ds, c) {
+            return function() { onDateClick(ds, c); };
+          })(dateStr, cell);
+        }
+
+        grid.appendChild(cell);
+      }
+    }
+
+    function onDateClick(dateStr, cell) {
+      var cells = document.querySelectorAll('.calendar-day.selected');
+      for (var i = 0; i < cells.length; i++) {
+        cells[i].classList.remove('selected');
+      }
+      cell.classList.add('selected');
+      selectedDate = dateStr;
+      selectedSlot = null;
+      loadTimeSlots(dateStr);
+    }
+
+    async function loadTimeSlots(dateStr) {
+      var container = document.getElementById('timeSlots');
+      container.innerHTML = '<div class="alert alert-warning">加载中...</div>';
+
+      try {
+        // 查询已预约数量
+        var result = await db.from('bookings').select('time_slot').eq('booking_date', dateStr).neq('status', 'cancelled');
+        if (result.error) throw result.error;
+
+        // 统计每个时段的预约数
+        var counts = {};
+        for (var i = 0; i < result.data.length; i++) {
+          var slot = result.data[i].time_slot;
+          counts[slot] = (counts[slot] || 0) + 1;
+        }
+
+        var now = new Date();
+        var isToday = formatDate(now) === dateStr;
+        var currentHour = now.getHours();
+        var currentMinute = now.getMinutes();
+        var currentTimeNum = currentHour * 100 + currentMinute;
+
+        var html = '';
+
+        // 使用从后台加载的时段配置
+        for (var i = 0; i < timeSlots.length; i++) {
+          var slot = timeSlots[i];
+          var booked = counts[slot.slot_key] || 0;
+          var avail = slot.capacity - booked;
+          
+          // 解析时段开始时间
+          var startTimeParts = slot.start_time.split(':');
+          var startTimeNum = parseInt(startTimeParts[0]) * 100 + parseInt(startTimeParts[1]);
+          
+          // 判断是否已过截止时间（需要提前2小时）
+          var deadlineTime = startTimeNum - 200; // 提前2小时
+          if (deadlineTime < 0) deadlineTime = 0;
+          
+          var isDisabled = false;
+          var disableReason = '';
+          
+          if (isToday && currentTimeNum >= deadlineTime) {
+            isDisabled = true;
+            disableReason = '已过预约截止时间';
+          }
+          
+          var isFull = avail <= 0;
+          if (isFull) {
+            isDisabled = true;
+            disableReason = '已满';
+          }
+
+          html += '<div class="time-slot' + (isDisabled ? ' disabled' : '') + '" data-slot="' + slot.slot_key + '">';
+          html += '<div class="time">' + slot.label + '</div>';
+          html += '<div class="capacity">' + (isFull ? '已满' : '剩余 ' + avail + ' 个名额') + '</div>';
+          if (isDisabled && !isFull && disableReason) {
+            html += '<div class="capacity">' + disableReason + '</div>';
+          }
+          html += '</div>';
+        }
+
+        container.innerHTML = html;
+
+        // 绑定点击事件
+        var slots = container.querySelectorAll('.time-slot:not(.disabled)');
+        for (var i = 0; i < slots.length; i++) {
+          slots[i].onclick = (function(s, c) {
+            return function() { onSlotClick(s, c); };
+          })(slots[i].getAttribute('data-slot'), slots[i]);
+        }
+
+      } catch (e) {
+        container.innerHTML = '<div class="alert alert-error">加载失败: ' + e.message + '</div>';
+      }
+    }
+
+    function onSlotClick(slot, cell) {
+      var cells = document.querySelectorAll('.time-slot.selected');
+      for (var i = 0; i < cells.length; i++) {
+        cells[i].classList.remove('selected');
+      }
+      cell.classList.add('selected');
+      selectedSlot = slot;
+    }
+
+    function validateForm() {
+      var name = document.getElementById('name').value.trim();
+      var phone = document.getElementById('phone').value.trim();
+      var position = document.getElementById('position').value;
+      
+      // 姓名验证
+      if (!name) {
+        alert('请输入姓名');
+        document.getElementById('name').focus();
+        return false;
+      }
+      if (name.length < 2 || name.length > 20) {
+        alert('姓名长度应在2-20个字符之间');
+        document.getElementById('name').focus();
+        return false;
+      }
+      
+      // 手机号验证
+      if (!phone) {
+        alert('请输入联系电话');
+        document.getElementById('phone').focus();
+        return false;
+      }
+      if (!/^1[3-9]\d{9}$/.test(phone)) {
+        alert('请输入正确的手机号码（11位数字）');
+        document.getElementById('phone').focus();
+        return false;
+      }
+      
+      // 岗位验证
+      if (!position) {
+        alert('请选择应聘岗位');
+        document.getElementById('position').focus();
+        return false;
+      }
+      
+      // 日期验证
+      if (!selectedDate) {
+        alert('请选择面试日期');
+        return false;
+      }
+      
+      // 时段验证
+      if (!selectedSlot) {
+        alert('请选择面试时段');
+        return false;
+      }
+      
+      return true;
+    }
+
+    async function onSubmit(e) {
+      e.preventDefault();
+
+      if (!validateForm()) {
+        return;
+      }
+
+      var name = document.getElementById('name').value.trim();
+      var phone = document.getElementById('phone').value.trim();
+      var position = document.getElementById('position').value;
+      var notes = document.getElementById('notes').value.trim();
+
+      var btn = document.getElementById('submitBtn');
+      btn.disabled = true;
+      btn.textContent = '检查中...';
+
+      try {
+        // 检查是否已经有相同的预约
+        var checkResult = await db.from('bookings')
+          .select('id')
+          .eq('phone', phone)
+          .eq('booking_date', selectedDate)
+          .eq('time_slot', selectedSlot)
+          .neq('status', 'cancelled');
+        
+        if (checkResult.data && checkResult.data.length > 0) {
+          alert('您已经在该时段预约过面试，请选择其他时段或取消之前的预约');
+          btn.disabled = false;
+          btn.textContent = '提交预约';
+          return;
+        }
+
+        btn.textContent = '提交中...';
+
+        // 优先使用URL传递的application_id
+        var applicationId = urlApplicationId;
+        
+        // 如果没有URL传递的application_id，尝试通过手机号查找
+        if (!applicationId) {
+          try {
+            var appResult = await db.from('applications')
+              .select('id')
+              .eq('phone', phone)
+              .order('created_at', { ascending: false })
+              .limit(1);
+            
+            if (appResult.data && appResult.data.length > 0) {
+              applicationId = appResult.data[0].id;
+              console.log('✅ 找到关联的应聘信息，ID:', applicationId);
+            }
+          } catch (appError) {
+            console.log('查找应聘信息失败:', appError);
+          }
+        } else {
+          console.log('✅ 使用URL传递的application_id:', applicationId);
+        }
+
+        var data = {
+          name: name,
+          phone: phone,
+          position: position,
+          booking_date: selectedDate,
+          time_slot: selectedSlot,
+          notes: notes,
+          status: 'pending'
+        };
+
+        // 如果找到了关联的应聘信息，添加 application_id
+        if (applicationId) {
+          data.application_id = applicationId;
+        }
+
+        var result = await db.from('bookings').insert([data]).select();
+        if (result.error) throw result.error;
+
+        // 标记流程状态 - 面试已预约完成
+        localStorage.setItem('currentBooking', JSON.stringify({
+            id: result.data[0].id,
+            name: name,
+            phone: phone,
+            position: position,
+            bookingDate: selectedDate,
+            timeSlot: selectedSlot,
+            bookedAt: new Date().toISOString()
+        }));
+
+        window.location.href = 'success-standalone.html?id=' + result.data[0].id;
+      } catch (e) {
+        if (e.message && e.message.includes('duplicate key')) {
+          alert('您已经在该时段预约过面试，请选择其他时段或取消之前的预约');
+        } else {
+          alert('提交失败: ' + e.message);
+        }
+        btn.disabled = false;
+        btn.textContent = '提交预约';
+      }
+    }
+
+    document.addEventListener('DOMContentLoaded', loadSDK);
+  </script>
+</body>
+</html>

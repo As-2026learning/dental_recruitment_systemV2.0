@@ -1,0 +1,665 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>预约成功 - 义齿工厂招聘</title>
+  <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Microsoft YaHei", sans-serif;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      min-height: 100vh;
+      padding: 20px;
+    }
+    .container {
+      max-width: 600px;
+      margin: 0 auto;
+      background: white;
+      border-radius: 16px;
+      box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+      overflow: hidden;
+    }
+    .header {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      padding: 30px;
+      text-align: center;
+    }
+    .header h1 { font-size: 28px; }
+    .main-content { padding: 30px; text-align: center; }
+    .success-icon {
+      width: 100px;
+      height: 100px;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin: 0 auto 20px;
+    }
+    .success-icon svg { width: 50px; height: 50px; fill: white; }
+    h2 { margin-bottom: 10px; color: #333; }
+    .subtitle { color: #666; margin-bottom: 30px; }
+    .booking-details {
+      background: #f8f9ff;
+      border-radius: 12px;
+      padding: 20px;
+      margin: 20px 0;
+      text-align: left;
+    }
+    .detail-item {
+      display: flex;
+      justify-content: space-between;
+      padding: 10px 0;
+      border-bottom: 1px solid #e0e0e0;
+    }
+    .detail-item:last-child { border-bottom: none; }
+    .detail-label { color: #666; }
+    .detail-value { font-weight: 600; color: #333; }
+    .status {
+      display: inline-block;
+      padding: 4px 12px;
+      border-radius: 20px;
+      font-size: 12px;
+      font-weight: 600;
+    }
+    .status-pending { background: #fff3e0; color: #e65100; }
+    .status-confirmed { background: #e8f5e9; color: #2e7d32; }
+    .status-cancelled { background: #ffebee; color: #c62828; }
+    .alert {
+      padding: 15px 20px;
+      border-radius: 8px;
+      margin: 20px 0;
+      text-align: left;
+      font-size: 14px;
+    }
+    .alert-info { background: #e3f2fd; color: #1565c0; border-left: 4px solid #1565c0; }
+    .btn {
+      display: inline-block;
+      padding: 14px 32px;
+      font-size: 16px;
+      font-weight: 600;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      text-decoration: none;
+      background: #f0f0f0;
+      color: #333;
+      margin: 5px;
+    }
+    .btn:hover { background: #e0e0e0; }
+    .btn-danger {
+      background: #e74c3c;
+      color: white;
+    }
+    .btn-danger:hover { background: #c0392b; }
+    .btn:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+    }
+    .btn-primary {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+    }
+    .btn-primary:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+    }
+    .status-query-banner {
+      background: linear-gradient(135deg, #f6ffed 0%, #f0f5ff 100%);
+      border: 2px solid #95de64;
+      border-radius: 12px;
+      padding: 20px;
+      margin: 20px 0;
+      text-align: center;
+    }
+    .status-query-banner h3 {
+      color: #333;
+      margin-bottom: 10px;
+      font-size: 18px;
+    }
+    .status-query-banner p {
+      color: #666;
+      font-size: 14px;
+      margin-bottom: 15px;
+    }
+    .btn-cancel-disabled {
+      background: #95a5a6;
+      color: white;
+      cursor: not-allowed;
+    }
+    .cancel-info {
+      background: #fff3e0;
+      color: #e65100;
+      padding: 10px 15px;
+      border-radius: 8px;
+      margin: 15px 0;
+      font-size: 14px;
+    }
+    .modal {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(0,0,0,0.5);
+      align-items: center;
+      justify-content: center;
+      z-index: 1000;
+    }
+    .modal.show { display: flex; }
+    .modal-content {
+      background: white;
+      border-radius: 16px;
+      padding: 30px;
+      max-width: 400px;
+      width: 90%;
+      text-align: center;
+    }
+    .modal-title {
+      font-size: 20px;
+      margin-bottom: 15px;
+      color: #333;
+    }
+    .modal-text {
+      color: #666;
+      margin-bottom: 20px;
+      line-height: 1.6;
+    }
+    .modal-buttons {
+      display: flex;
+      gap: 10px;
+      justify-content: center;
+    }
+    .alert-error { background: #ffebee; color: #c62828; padding: 20px; border-radius: 8px; }
+    #loading {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(255,255,255,0.95);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-direction: column;
+      z-index: 9999;
+    }
+    #loading.hidden { display: none; }
+    .spinner {
+      width: 50px;
+      height: 50px;
+      border: 4px solid #f3f3f3;
+      border-top: 4px solid #667eea;
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+    }
+    @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+  </style>
+</head>
+<body>
+  <div id="loading">
+    <div class="spinner"></div>
+    <p style="margin-top:20px;color:#666;">正在加载预约信息...</p>
+  </div>
+
+  <div class="container">
+    <div class="header">
+      <h1>预约成功</h1>
+    </div>
+    
+    <div class="main-content">
+      <div class="success-icon">
+        <svg viewBox="0 0 24 24">
+          <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41L9 16.17z"/>
+        </svg>
+      </div>
+      
+      <h2>恭喜！您的面试预约已提交成功</h2>
+      <p class="subtitle">请及时查阅面试预约状态</p>
+      
+      <div id="bookingDetails">
+        <div style="text-align: center; padding: 40px;">加载中...</div>
+      </div>
+      
+      <div class="alert alert-info" id="tipsBox">
+        <strong>温馨提示：</strong>
+        <ul style="margin-top: 8px; padding-left: 20px;" id="tipsList">
+          <li>加载中...</li>
+        </ul>
+      </div>
+      
+      <div id="cancelSection"></div>
+      
+      <!-- 状态查询引导 -->
+      <div class="status-query-banner">
+        <h3>🔍 查询面试预约状态</h3>
+        <a href="#" id="statusQueryLink" class="btn btn-primary">立即查询</a>
+      </div>
+      
+      <a href="index.html" class="btn">返回首页</a>
+      <a href="status-query.html" class="btn btn-primary">查询预约状态</a>
+    </div>
+  </div>
+
+  <!-- 取消预约确认模态框 -->
+  <div id="cancelModal" class="modal">
+    <div class="modal-content">
+      <h3 class="modal-title">确认取消预约</h3>
+      <p class="modal-text" id="cancelModalText">您确定要取消这次面试预约吗？<br>取消后您需要重新预约。</p>
+      <div class="modal-buttons">
+        <button class="btn" onclick="closeCancelModal()">不取消</button>
+        <button class="btn btn-danger" onclick="confirmCancelBooking()">确认取消</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    var SUPABASE_URL = 'https://dxrghlqnwfwpuxjvyisv.supabase.co';
+    var SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImR4cmdobHFud2Z3cHV4anZ5aXN2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQ2ODYyMjAsImV4cCI6MjA5MDI2MjIyMH0.r6hDrTVZ1p_Qq6sHuLeBEo3SFqGEh0trwbRMXLWnrNQ';
+
+    var db = null;
+    var timeSlots = [];
+    var currentBooking = null;
+
+    function loadSDK() {
+      var cdnList = [
+        'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js',
+        'https://unpkg.com/@supabase/supabase-js@2/dist/umd/supabase.min.js'
+      ];
+      var index = 0;
+
+      function tryLoad() {
+        if (index >= cdnList.length) {
+          showError('系统加载失败，请检查网络后刷新页面');
+          return;
+        }
+        var script = document.createElement('script');
+        script.src = cdnList[index];
+        script.onload = function() { initApp(); };
+        script.onerror = function() { index++; tryLoad(); };
+        document.head.appendChild(script);
+      }
+      tryLoad();
+    }
+
+    async function initApp() {
+      db = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+      
+      // 加载时段配置
+      await loadTimeSlots();
+      
+      // 加载温馨提示
+      await loadTips();
+      
+      // 加载预约信息
+      await loadBooking();
+    }
+
+    async function loadTimeSlots() {
+      try {
+        var result = await db.from('time_slots').select('*').eq('is_active', true).order('sort_order');
+        if (result.data && result.data.length > 0) {
+          timeSlots = result.data;
+        }
+      } catch (e) {
+        console.error('加载时段配置失败:', e);
+      }
+    }
+
+    async function loadTips() {
+      try {
+        var result = await db.from('system_config').select('*').eq('config_key', 'success_tips');
+        if (result.data && result.data.length > 0) {
+          var tips = result.data[0].config_value.split('|');
+          var tipsList = document.getElementById('tipsList');
+          tipsList.innerHTML = '';
+          for (var i = 0; i < tips.length; i++) {
+            var li = document.createElement('li');
+            li.textContent = tips[i];
+            tipsList.appendChild(li);
+          }
+        }
+      } catch (e) {
+        console.error('加载温馨提示失败:', e);
+      }
+    }
+
+    var bookingSubscription = null;
+    
+    async function loadBooking() {
+      var params = new URLSearchParams(window.location.search);
+      var id = params.get('id');
+
+      if (!id) {
+        showError('未找到预约信息，请从预约页面重新提交');
+        document.getElementById('loading').classList.add('hidden');
+        return;
+      }
+
+      try {
+        var result = await db.from('bookings').select('*').eq('id', id).single();
+        if (result.error) throw result.error;
+        if (!result.data) {
+          showError('未找到预约信息');
+          return;
+        }
+        displayBooking(result.data);
+        document.getElementById('loading').classList.add('hidden');
+        
+        // 订阅实时状态更新
+        subscribeToBookingUpdates(id);
+      } catch (e) {
+        showError('获取预约信息失败: ' + e.message);
+        document.getElementById('loading').classList.add('hidden');
+      }
+    }
+    
+    // 订阅预约状态实时更新
+    function subscribeToBookingUpdates(bookingId) {
+      try {
+        // 使用 Supabase Realtime 订阅
+        bookingSubscription = db
+          .channel('booking_updates_' + bookingId)
+          .on('postgres_changes', {
+            event: 'UPDATE',
+            schema: 'public',
+            table: 'bookings',
+            filter: 'id=eq.' + bookingId
+          }, function(payload) {
+            console.log('收到预约状态更新:', payload);
+            handleBookingUpdate(payload.new);
+          })
+          .subscribe(function(status) {
+            console.log('预约状态订阅:', status);
+          });
+      } catch (e) {
+        console.error('订阅预约状态失败:', e);
+        // 如果实时订阅失败，使用轮询作为备用
+        startPolling(bookingId);
+      }
+    }
+    
+    // 轮询获取最新状态（备用方案）
+    var pollingInterval = null;
+    function startPolling(bookingId) {
+      console.log('启动轮询获取预约状态');
+      pollingInterval = setInterval(async function() {
+        try {
+          var result = await db.from('bookings').select('*').eq('id', bookingId).single();
+          if (result.data && currentBooking && result.data.status !== currentBooking.status) {
+            handleBookingUpdate(result.data);
+          }
+        } catch (e) {
+          console.error('轮询获取预约状态失败:', e);
+        }
+      }, 10000); // 每10秒轮询一次
+    }
+    
+    // 处理预约状态更新
+    function handleBookingUpdate(updatedBooking) {
+      if (!currentBooking || updatedBooking.status === currentBooking.status) {
+        return;
+      }
+      
+      var oldStatus = currentBooking.status;
+      currentBooking = updatedBooking;
+      
+      // 重新显示预约信息
+      displayBooking(updatedBooking);
+      
+      // 显示状态更新提示
+      var statusMap = { 'pending': '待确认', 'confirmed': '已确认', 'cancelled': '已取消' };
+      var newStatusLabel = statusMap[updatedBooking.status] || updatedBooking.status;
+      
+      // 创建状态更新提示
+      showStatusUpdateNotification(oldStatus, updatedBooking.status, newStatusLabel);
+    }
+    
+    // 显示状态更新通知
+    function showStatusUpdateNotification(oldStatus, newStatus, newStatusLabel) {
+      // 移除旧的通知
+      var oldNotification = document.getElementById('statusUpdateNotification');
+      if (oldNotification) {
+        oldNotification.remove();
+      }
+      
+      var notification = document.createElement('div');
+      notification.id = 'statusUpdateNotification';
+      notification.style.cssText = 'position: fixed; top: 20px; left: 50%; transform: translateX(-50%); background: #27ae60; color: white; padding: 15px 30px; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.2); z-index: 1000; animation: slideDown 0.3s ease;';
+      
+      if (newStatus === 'confirmed') {
+        notification.innerHTML = '<strong>✓ 预约已确认</strong><br>您的面试预约已被管理员确认，请准时参加面试';
+      } else if (newStatus === 'cancelled') {
+        notification.innerHTML = '<strong>✗ 预约已取消</strong><br>您的面试预约已被取消';
+      } else {
+        notification.innerHTML = '<strong>预约状态更新</strong><br>当前状态：' + newStatusLabel;
+      }
+      
+      document.body.appendChild(notification);
+      
+      // 5秒后自动移除通知
+      setTimeout(function() {
+        notification.style.animation = 'slideUp 0.3s ease';
+        setTimeout(function() {
+          notification.remove();
+        }, 300);
+      }, 5000);
+    }
+    
+    // 添加动画样式
+    var style = document.createElement('style');
+    style.textContent = `
+      @keyframes slideDown {
+        from { transform: translateX(-50%) translateY(-100%); opacity: 0; }
+        to { transform: translateX(-50%) translateY(0); opacity: 1; }
+      }
+      @keyframes slideUp {
+        from { transform: translateX(-50%) translateY(0); opacity: 1; }
+        to { transform: translateX(-50%) translateY(-100%); opacity: 0; }
+      }
+    `;
+    document.head.appendChild(style);
+    
+    // 页面卸载时清理订阅和轮询
+    window.addEventListener('beforeunload', function() {
+      if (bookingSubscription) {
+        bookingSubscription.unsubscribe();
+      }
+      if (pollingInterval) {
+        clearInterval(pollingInterval);
+      }
+    });
+
+    function displayBooking(b) {
+      var container = document.getElementById('bookingDetails');
+      currentBooking = b;
+      
+      // 更新查询状态链接，携带预约信息
+      updateStatusQueryLink(b);
+      
+      // 查找时段标签
+      var slotLabel = b.time_slot;
+      for (var i = 0; i < timeSlots.length; i++) {
+        if (timeSlots[i].slot_key === b.time_slot) {
+          slotLabel = timeSlots[i].label;
+          break;
+        }
+      }
+      
+      var statusMap = { 'pending': '待确认', 'confirmed': '已确认', 'cancelled': '已取消' };
+      var statusLabel = statusMap[b.status] || b.status;
+
+      var d = new Date(b.booking_date);
+      var weeks = ['周日', '周一', '周二', '周三', '周四', '周五', '周六'];
+      var dateStr = d.getFullYear() + '年' + (d.getMonth() + 1) + '月' + d.getDate() + '日 ' + weeks[d.getDay()];
+
+      var html = '';
+      html += '<div class="detail-item"><span class="detail-label">预约编号</span><span class="detail-value">' + b.id + '</span></div>';
+      html += '<div class="detail-item"><span class="detail-label">姓名</span><span class="detail-value">' + b.name + '</span></div>';
+      html += '<div class="detail-item"><span class="detail-label">联系电话</span><span class="detail-value">' + b.phone + '</span></div>';
+      html += '<div class="detail-item"><span class="detail-label">应聘岗位</span><span class="detail-value">' + (b.position || '未选择') + '</span></div>';
+      html += '<div class="detail-item"><span class="detail-label">面试日期</span><span class="detail-value">' + dateStr + '</span></div>';
+      html += '<div class="detail-item"><span class="detail-label">面试时段</span><span class="detail-value">' + slotLabel + '</span></div>';
+      html += '<div class="detail-item"><span class="detail-label">预约状态</span><span class="detail-value"><span class="status status-' + b.status + '">' + statusLabel + '</span></span></div>';
+      
+      if (b.notes) {
+        html += '<div class="detail-item"><span class="detail-label">备注</span><span class="detail-value">' + b.notes + '</span></div>';
+      }
+      
+      html += '<div class="detail-item"><span class="detail-label">预约时间</span><span class="detail-value">' + new Date(b.created_at).toLocaleString('zh-CN') + '</span></div>';
+
+      container.innerHTML = html;
+      
+      // 显示取消预约按钮（仅当预约状态不是已取消时）
+      renderCancelButton(b);
+    }
+    
+    // 更新查询状态链接
+    function updateStatusQueryLink(booking) {
+      var link = document.getElementById('statusQueryLink');
+      if (link && booking) {
+        var url = 'status-query.html?name=' + encodeURIComponent(booking.name) + 
+                  '&phone=' + encodeURIComponent(booking.phone);
+        link.href = url;
+      }
+    }
+    
+    // 渲染取消预约按钮
+    function renderCancelButton(booking) {
+      var cancelSection = document.getElementById('cancelSection');
+      
+      // 如果预约已取消，不显示取消按钮
+      if (booking.status === 'cancelled') {
+        cancelSection.innerHTML = '';
+        return;
+      }
+      
+      // 检查是否允许取消（提前2小时以上）
+      var canCancel = checkCanCancel(booking);
+      
+      if (canCancel.can) {
+        cancelSection.innerHTML = '<button class="btn btn-danger" onclick="showCancelModal()">取消预约</button>';
+      } else {
+        cancelSection.innerHTML = '<div class="cancel-info">' + canCancel.reason + '</div>';
+      }
+    }
+    
+    // 检查是否可以取消预约
+    function checkCanCancel(booking) {
+      var now = new Date();
+      var bookingDate = new Date(booking.booking_date);
+      
+      // 解析时段开始时间
+      var timeSlot = timeSlots.find(function(ts) { return ts.slot_key === booking.time_slot; });
+      if (timeSlot && timeSlot.start_time) {
+        var timeParts = timeSlot.start_time.split(':');
+        bookingDate.setHours(parseInt(timeParts[0]), parseInt(timeParts[1]), 0, 0);
+      } else {
+        // 默认上午9点
+        bookingDate.setHours(9, 0, 0, 0);
+      }
+      
+      // 计算时间差（小时）
+      var diffHours = (bookingDate - now) / (1000 * 60 * 60);
+      
+      if (diffHours < 0) {
+        return { can: false, reason: '面试已过期，无法取消' };
+      }
+      
+      if (diffHours < 2) {
+        return { can: false, reason: '距离面试时间不足2小时，无法取消预约' };
+      }
+      
+      return { can: true, reason: '' };
+    }
+    
+    // 显示取消预约模态框
+    function showCancelModal() {
+      document.getElementById('cancelModal').classList.add('show');
+    }
+    
+    // 关闭取消预约模态框
+    function closeCancelModal() {
+      document.getElementById('cancelModal').classList.remove('show');
+    }
+    
+    // 确认取消预约
+    async function confirmCancelBooking() {
+      if (!currentBooking) return;
+      
+      try {
+        var result = await db.from('bookings')
+          .update({ status: 'cancelled', updated_at: new Date().toISOString() })
+          .eq('id', currentBooking.id)
+          .select();
+        
+        if (result.error) throw result.error;
+        
+        closeCancelModal();
+        alert('预约已取消成功！');
+        
+        // 刷新页面显示
+        currentBooking.status = 'cancelled';
+        displayBooking(currentBooking);
+      } catch (e) {
+        alert('取消预约失败: ' + e.message);
+        closeCancelModal();
+      }
+    }
+
+    function showError(msg) {
+      document.getElementById('loading').classList.add('hidden');
+      document.getElementById('bookingDetails').innerHTML = '<div class="alert-error">' + msg + '</div>';
+    }
+
+    // 保存为图片功能
+    async function saveAsImage() {
+      try {
+        // 显示加载提示
+        var loading = document.createElement('div');
+        loading.id = 'saveLoading';
+        loading.style.cssText = 'position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(255,255,255,0.9); display: flex; align-items: center; justify-content: center; flex-direction: column; z-index: 9999;';
+        loading.innerHTML = '<div class="spinner"></div><p style="margin-top:20px;color:#666;">正在生成图片，请稍候...</p>';
+        document.body.appendChild(loading);
+
+        // 选择要转换的元素
+        var container = document.querySelector('.container');
+        
+        // 使用 html2canvas 生成图片
+        var canvas = await html2canvas(container, {
+          scale: 2, // 提高清晰度
+          useCORS: true, // 允许跨域图片
+          logging: false
+        });
+
+        // 转换为图片并下载
+        var image = canvas.toDataURL('image/png');
+        var link = document.createElement('a');
+        link.href = image;
+        link.download = '面试预约确认_' + currentBooking.id + '.png';
+        link.click();
+
+        // 移除加载提示
+        loading.remove();
+
+        // 显示成功提示
+        alert('预约信息已成功保存为图片！');
+      } catch (e) {
+        console.error('保存图片失败:', e);
+        alert('保存图片失败，请重试');
+        // 移除加载提示
+        var loading = document.getElementById('saveLoading');
+        if (loading) {
+          loading.remove();
+        }
+      }
+    }
+
+    document.addEventListener('DOMContentLoaded', loadSDK);
+  </script>
+</body>
+</html>

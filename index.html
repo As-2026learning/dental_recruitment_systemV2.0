@@ -1,0 +1,710 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>招聘管理系统</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+        .container {
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            width: 100%;
+            max-width: 600px;
+            padding: 50px;
+            text-align: center;
+        }
+        .logo {
+            font-size: 60px;
+            margin-bottom: 20px;
+        }
+        h1 {
+            font-size: 32px;
+            color: #333;
+            margin-bottom: 10px;
+        }
+        .subtitle {
+            color: #666;
+            font-size: 16px;
+            margin-bottom: 40px;
+        }
+
+        /* 流程步骤指示器 */
+        .process-flow {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 40px;
+            padding: 20px;
+            background: linear-gradient(135deg, #f8f9ff 0%, #f0f5ff 100%);
+            border-radius: 16px;
+            border: 2px solid #e8e8ff;
+        }
+        .process-step {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            position: relative;
+            flex: 1;
+            max-width: 120px;
+        }
+        .step-number {
+            width: 44px;
+            height: 44px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 600;
+            font-size: 18px;
+            margin-bottom: 10px;
+            transition: all 0.3s ease;
+            position: relative;
+        }
+        .step-number::after {
+            content: '';
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            border-radius: 50%;
+            border: 3px solid transparent;
+            transition: all 0.3s ease;
+        }
+        .step-label {
+            font-size: 13px;
+            color: #666;
+            font-weight: 500;
+            text-align: center;
+            line-height: 1.3;
+        }
+        .step-connector {
+            width: 40px;
+            height: 3px;
+            background: #e0e0e0;
+            margin: 0 10px;
+            margin-bottom: 30px;
+            border-radius: 2px;
+            transition: all 0.3s ease;
+        }
+
+        /* 步骤状态样式 */
+        .process-step.completed .step-number {
+            background: linear-gradient(135deg, #52c41a 0%, #389e0d 100%);
+            color: white;
+        }
+        .process-step.completed .step-number::after {
+            border-color: #52c41a;
+            animation: pulse 2s infinite;
+        }
+        .process-step.completed .step-label {
+            color: #52c41a;
+            font-weight: 600;
+        }
+        .process-step.completed + .step-connector {
+            background: linear-gradient(90deg, #52c41a 0%, #95de64 100%);
+        }
+
+        .process-step.current .step-number {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+        }
+        .process-step.current .step-number::after {
+            border-color: #667eea;
+            animation: pulse 2s infinite;
+        }
+        .process-step.current .step-label {
+            color: #667eea;
+            font-weight: 600;
+        }
+
+        .process-step.pending .step-number {
+            background: #f5f5f5;
+            color: #999;
+            border: 2px solid #e0e0e0;
+        }
+        .process-step.pending .step-label {
+            color: #999;
+        }
+
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); opacity: 1; }
+            50% { transform: scale(1.1); opacity: 0.8; }
+        }
+
+        /* 状态提示条 */
+        .status-banner {
+            display: none;
+            padding: 16px 20px;
+            border-radius: 12px;
+            margin-bottom: 25px;
+            text-align: left;
+            animation: slideDown 0.4s ease;
+        }
+        .status-banner.show {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        @keyframes slideDown {
+            from { opacity: 0; transform: translateY(-10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .status-banner.info {
+            background: #e6f7ff;
+            border: 1px solid #91d5ff;
+            color: #096dd9;
+        }
+        .status-banner.success {
+            background: #f6ffed;
+            border: 1px solid #b7eb8f;
+            color: #389e0d;
+        }
+        .status-banner.warning {
+            background: #fffbe6;
+            border: 1px solid #ffe58f;
+            color: #d48806;
+        }
+        .status-banner .icon {
+            font-size: 24px;
+            flex-shrink: 0;
+        }
+        .status-banner .content {
+            flex: 1;
+        }
+        .status-banner .title {
+            font-weight: 600;
+            font-size: 15px;
+            margin-bottom: 4px;
+        }
+        .status-banner .desc {
+            font-size: 13px;
+            opacity: 0.9;
+        }
+
+        .menu {
+            display: grid;
+            gap: 15px;
+        }
+        .menu-item {
+            display: flex;
+            align-items: center;
+            padding: 20px;
+            background: #f8f9ff;
+            border-radius: 12px;
+            text-decoration: none;
+            color: #333;
+            transition: all 0.3s;
+            border: 2px solid transparent;
+            cursor: pointer;
+            position: relative;
+            overflow: hidden;
+        }
+        .menu-item:hover:not(.disabled) {
+            background: #667eea;
+            color: white;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 20px rgba(102, 126, 234, 0.3);
+        }
+        .menu-item.disabled {
+            background: #f5f5f5;
+            color: #999;
+            cursor: not-allowed;
+            border-color: #e0e0e0;
+        }
+        .menu-item.disabled .menu-icon {
+            opacity: 0.5;
+        }
+        .menu-item.disabled .lock-icon {
+            position: absolute;
+            right: 20px;
+            top: 50%;
+            transform: translateY(-50%);
+            font-size: 20px;
+            color: #999;
+        }
+        .menu-item.current {
+            background: linear-gradient(135deg, #f6ffed 0%, #f0f5ff 100%);
+            border-color: #95de64;
+        }
+        .menu-item.current::before {
+            content: '当前步骤';
+            position: absolute;
+            top: 8px;
+            right: 12px;
+            font-size: 11px;
+            padding: 2px 8px;
+            background: #52c41a;
+            color: white;
+            border-radius: 10px;
+            font-weight: 500;
+        }
+        .menu-item.completed {
+            background: linear-gradient(135deg, #f6ffed 0%, #e6f7ff 100%);
+            border-color: #52c41a;
+        }
+        .menu-item.completed::after {
+            content: '✓';
+            position: absolute;
+            right: 20px;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 28px;
+            height: 28px;
+            background: #52c41a;
+            color: white;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 16px;
+            font-weight: bold;
+        }
+        .menu-icon {
+            font-size: 28px;
+            margin-right: 15px;
+            transition: all 0.3s;
+        }
+        .menu-text {
+            text-align: left;
+            flex: 1;
+        }
+        .menu-text h3 {
+            font-size: 18px;
+            margin-bottom: 5px;
+            transition: all 0.3s;
+        }
+        .menu-text p {
+            font-size: 14px;
+            opacity: 0.8;
+            transition: all 0.3s;
+        }
+        .divider {
+            margin: 30px 0;
+            border-top: 1px solid #e0e0e0;
+        }
+        .admin-section h2 {
+            font-size: 20px;
+            color: #333;
+            margin-bottom: 20px;
+        }
+        .footer {
+            margin-top: 30px;
+            color: #999;
+            font-size: 14px;
+        }
+
+        /* 提示弹窗 */
+        .toast {
+            position: fixed;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%) translateY(-100px);
+            background: #333;
+            color: white;
+            padding: 16px 28px;
+            border-radius: 12px;
+            font-size: 15px;
+            font-weight: 500;
+            box-shadow: 0 8px 30px rgba(0,0,0,0.3);
+            z-index: 1000;
+            opacity: 0;
+            transition: all 0.4s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .toast.show {
+            transform: translateX(-50%) translateY(0);
+            opacity: 1;
+        }
+        .toast.warning {
+            background: #faad14;
+        }
+        .toast.info {
+            background: #1890ff;
+        }
+
+        /* 响应式 */
+        @media (max-width: 480px) {
+            .container {
+                padding: 30px 20px;
+            }
+            .process-flow {
+                padding: 15px 10px;
+            }
+            .step-number {
+                width: 36px;
+                height: 36px;
+                font-size: 14px;
+            }
+            .step-label {
+                font-size: 11px;
+            }
+            .step-connector {
+                width: 20px;
+                margin: 0 5px;
+                margin-bottom: 25px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="logo">🏭</div>
+        <h1>招聘管理系统</h1>
+        <p class="subtitle">高效管理招聘流程，轻松预约面试</p>
+
+        <!-- 流程步骤指示器 -->
+        <div class="process-flow" id="processFlow">
+            <div class="process-step" id="step1">
+                <div class="step-number">1</div>
+                <div class="step-label">填写应聘<br>信息</div>
+            </div>
+            <div class="step-connector"></div>
+            <div class="process-step" id="step2">
+                <div class="step-number">2</div>
+                <div class="step-label">预约<br>面试</div>
+            </div>
+            <div class="step-connector"></div>
+            <div class="process-step" id="step3">
+                <div class="step-number">3</div>
+                <div class="step-label">查询预约<br>状态</div>
+            </div>
+        </div>
+
+        <!-- 状态提示条 -->
+        <div class="status-banner info" id="statusBanner">
+            <div class="icon" id="bannerIcon">💡</div>
+            <div class="content">
+                <div class="title" id="bannerTitle">欢迎使用招聘系统</div>
+                <div class="desc" id="bannerDesc">请按照流程顺序完成应聘步骤</div>
+            </div>
+        </div>
+
+        <div class="menu">
+            <a href="candidate-form-complete.html" class="menu-item" id="menuItem1">
+                <span class="menu-icon">📝</span>
+                <div class="menu-text">
+                    <h3>填写应聘信息</h3>
+                    <p>应聘者入口，提交个人简历</p>
+                </div>
+            </a>
+
+            <a class="menu-item disabled" id="menuItem2" onclick="handleMenuClick(2)">
+                <span class="menu-icon">📅</span>
+                <div class="menu-text">
+                    <h3>预约面试</h3>
+                    <p>选择面试时间，提交预约申请</p>
+                </div>
+                <span class="lock-icon">🔒</span>
+            </a>
+
+            <a class="menu-item disabled" id="menuItem3" onclick="handleMenuClick(3)">
+                <span class="menu-icon">🔍</span>
+                <div class="menu-text">
+                    <h3>查询预约状态</h3>
+                    <p>查看面试预约审核状态</p>
+                </div>
+                <span class="lock-icon">🔒</span>
+            </a>
+        </div>
+
+        <div class="divider"></div>
+
+        <div class="admin-section">
+            <h2>🔐 后台管理</h2>
+            <div class="menu">
+                <a href="login-new.html" class="menu-item">
+                    <span class="menu-icon">🔑</span>
+                    <div class="menu-text">
+                        <h3>管理员登录</h3>
+                        <p>管理应聘信息、预约和系统设置</p>
+                    </div>
+                </a>
+            </div>
+        </div>
+
+        <div class="footer">
+            <p>© 招聘管理系统</p>
+            <p style="margin-top: 15px; font-size: 12px;">
+                <button onclick="resetFlow()" style="background: #f0f0f0; border: none; padding: 6px 12px; border-radius: 4px; color: #666; cursor: pointer; font-size: 12px;">🔄 重置流程状态</button>
+            </p>
+        </div>
+    </div>
+
+    <!-- 提示弹窗 -->
+    <div class="toast" id="toast"></div>
+
+    <script>
+        // 流程状态管理
+        const FLOW_STATUS = {
+            NOT_STARTED: 'not_started',      // 未开始
+            INFO_FILLED: 'info_filled',      // 已填写应聘信息
+            BOOKED: 'booked',                // 已预约面试
+            COMPLETED: 'completed'           // 流程完成
+        };
+
+        // 获取当前流程状态
+        function getFlowStatus() {
+            // 检查 localStorage 中的状态
+            const hasApplication = localStorage.getItem('currentApplication') !== null;
+            const hasCandidateProfile = localStorage.getItem('candidateProfile') !== null;
+            const hasBooking = localStorage.getItem('currentBooking') !== null;
+
+            if (hasBooking) {
+                return FLOW_STATUS.COMPLETED;
+            } else if (hasApplication || hasCandidateProfile) {
+                return FLOW_STATUS.INFO_FILLED;
+            } else {
+                return FLOW_STATUS.NOT_STARTED;
+            }
+        }
+
+        // 更新流程显示
+        function updateProcessDisplay() {
+            const status = getFlowStatus();
+            const step1 = document.getElementById('step1');
+            const step2 = document.getElementById('step2');
+            const step3 = document.getElementById('step3');
+            const menuItem1 = document.getElementById('menuItem1');
+            const menuItem2 = document.getElementById('menuItem2');
+            const menuItem3 = document.getElementById('menuItem3');
+            const banner = document.getElementById('statusBanner');
+            const bannerIcon = document.getElementById('bannerIcon');
+            const bannerTitle = document.getElementById('bannerTitle');
+            const bannerDesc = document.getElementById('bannerDesc');
+
+            // 重置所有状态
+            [step1, step2, step3].forEach(step => {
+                step.className = 'process-step pending';
+            });
+            [menuItem1, menuItem2, menuItem3].forEach(item => {
+                item.className = 'menu-item disabled';
+                item.removeAttribute('href');
+                // 添加锁图标
+                if (!item.querySelector('.lock-icon') && item.id !== 'menuItem1') {
+                    const lockIcon = document.createElement('span');
+                    lockIcon.className = 'lock-icon';
+                    lockIcon.textContent = '🔒';
+                    item.appendChild(lockIcon);
+                }
+            });
+
+            // 根据状态设置显示
+            switch (status) {
+                case FLOW_STATUS.NOT_STARTED:
+                    // 步骤1：当前步骤
+                    step1.className = 'process-step current';
+                    step1.querySelector('.step-number').textContent = '1';
+
+                    // 菜单项1：可用
+                    menuItem1.className = 'menu-item current';
+                    menuItem1.href = 'candidate-form-complete.html';
+
+                    // 菜单项2：禁用
+                    menuItem2.onclick = () => showDisabledToast(2);
+
+                    // 菜单项3：始终开放（求职者可能换设备查询）
+                    menuItem3.className = 'menu-item';
+                    menuItem3.href = 'status-query.html';
+                    menuItem3.onclick = null;
+                    const lockIcon3NotStarted = menuItem3.querySelector('.lock-icon');
+                    if (lockIcon3NotStarted) lockIcon3NotStarted.remove();
+
+                    // 状态提示
+                    banner.className = 'status-banner info show';
+                    bannerIcon.textContent = '💡';
+                    bannerTitle.textContent = '开始您的应聘之旅';
+                    bannerDesc.textContent = '请先填写应聘信息，完成后即可预约面试';
+                    break;
+
+                case FLOW_STATUS.INFO_FILLED:
+                    // 步骤1：已完成
+                    step1.className = 'process-step completed';
+                    step1.querySelector('.step-number').textContent = '✓';
+
+                    // 步骤2：当前步骤
+                    step2.className = 'process-step current';
+
+                    // 菜单项1：已完成
+                    menuItem1.className = 'menu-item completed';
+                    menuItem1.href = 'candidate-form-complete.html';
+
+                    // 菜单项2：可用
+                    menuItem2.className = 'menu-item current';
+                    menuItem2.href = 'booking.html';
+                    menuItem2.onclick = null;
+                    // 移除锁图标
+                    const lockIcon2 = menuItem2.querySelector('.lock-icon');
+                    if (lockIcon2) lockIcon2.remove();
+
+                    // 菜单项3：始终开放（求职者可能已预约但换了设备）
+                    menuItem3.className = 'menu-item';
+                    menuItem3.href = 'status-query.html';
+                    menuItem3.onclick = null;
+                    const lockIcon3InfoFilled = menuItem3.querySelector('.lock-icon');
+                    if (lockIcon3InfoFilled) lockIcon3InfoFilled.remove();
+
+                    // 状态提示
+                    banner.className = 'status-banner success show';
+                    bannerIcon.textContent = '✅';
+                    bannerTitle.textContent = '应聘信息已填写完成';
+                    bannerDesc.textContent = '恭喜！您现在可以预约面试时间了';
+                    break;
+
+                case FLOW_STATUS.COMPLETED:
+                    // 所有步骤已完成
+                    step1.className = 'process-step completed';
+                    step1.querySelector('.step-number').textContent = '✓';
+                    step2.className = 'process-step completed';
+                    step2.querySelector('.step-number').textContent = '✓';
+                    step3.className = 'process-step completed';
+                    step3.querySelector('.step-number').textContent = '✓';
+
+                    // 所有菜单项：已完成
+                    menuItem1.className = 'menu-item completed';
+                    menuItem1.href = 'candidate-form-complete.html';
+
+                    menuItem2.className = 'menu-item completed';
+                    menuItem2.href = 'booking.html';
+                    menuItem2.onclick = null;
+                    const lockIcon2Completed = menuItem2.querySelector('.lock-icon');
+                    if (lockIcon2Completed) lockIcon2Completed.remove();
+
+                    // 获取预约信息，用于构建查询链接
+                    let bookingData = null;
+                    try {
+                        const bookingStr = localStorage.getItem('currentBooking');
+                        if (bookingStr) {
+                            bookingData = JSON.parse(bookingStr);
+                        }
+                    } catch (e) {
+                        console.error('解析预约信息失败:', e);
+                    }
+
+                    menuItem3.className = 'menu-item current';
+                    // 如果有预约信息，携带姓名和手机号跳转到查询页面
+                    if (bookingData && bookingData.name && bookingData.phone) {
+                        menuItem3.href = 'status-query.html?name=' + encodeURIComponent(bookingData.name) + '&phone=' + encodeURIComponent(bookingData.phone);
+                    } else {
+                        menuItem3.href = 'status-query.html';
+                    }
+                    menuItem3.onclick = null;
+                    const lockIcon3 = menuItem3.querySelector('.lock-icon');
+                    if (lockIcon3) lockIcon3.remove();
+
+                    // 状态提示
+                    banner.className = 'status-banner success show';
+                    bannerIcon.textContent = '🎉';
+                    bannerTitle.textContent = '面试预约已完成';
+                    bannerDesc.textContent = '您可以查询预约状态或查看面试安排';
+                    break;
+            }
+        }
+
+        // 显示禁用提示
+        function showDisabledToast(step, hasApplication = false) {
+            const toast = document.getElementById('toast');
+            let message = '';
+
+            if (step === 2) {
+                message = '⚠️ 请先完成"填写应聘信息"步骤';
+            } else if (step === 3) {
+                if (hasApplication) {
+                    message = '⚠️ 请先完成"预约面试"步骤';
+                } else {
+                    message = '⚠️ 请先完成"填写应聘信息"和"预约面试"步骤';
+                }
+            }
+
+            toast.textContent = message;
+            toast.className = 'toast warning show';
+
+            setTimeout(() => {
+                toast.classList.remove('show');
+            }, 3000);
+        }
+
+        // 处理菜单点击
+        function handleMenuClick(step) {
+            const status = getFlowStatus();
+            const hasApplication = status !== FLOW_STATUS.NOT_STARTED;
+            showDisabledToast(step, hasApplication);
+        }
+
+        // 重置流程状态
+        function resetFlow() {
+            window.recruitmentFlow.resetFlow();
+        }
+
+        // 页面加载时初始化
+        document.addEventListener('DOMContentLoaded', function() {
+            updateProcessDisplay();
+
+            // 监听 localStorage 变化（用于跨页面状态同步）
+            window.addEventListener('storage', function(e) {
+                if (e.key === 'currentApplication' ||
+                    e.key === 'candidateProfile' ||
+                    e.key === 'currentBooking') {
+                    updateProcessDisplay();
+                }
+            });
+        });
+
+        // 提供全局函数供其他页面调用
+        window.recruitmentFlow = {
+            // 标记应聘信息已填写
+            markApplicationCompleted: function(data) {
+                localStorage.setItem('currentApplication', JSON.stringify({
+                    ...data,
+                    completedAt: new Date().toISOString()
+                }));
+                localStorage.setItem('candidateProfile', JSON.stringify({
+                    name: data.name || '',
+                    phone: data.phone || '',
+                    position: data.position || ''
+                }));
+                updateProcessDisplay();
+            },
+
+            // 标记面试已预约
+            markBookingCompleted: function(data) {
+                localStorage.setItem('currentBooking', JSON.stringify({
+                    ...data,
+                    bookedAt: new Date().toISOString()
+                }));
+                updateProcessDisplay();
+            },
+
+            // 重置流程（用于测试）
+            resetFlow: function() {
+                if (confirm('确定要重置流程状态吗？这将清除所有已填写的信息。')) {
+                    localStorage.removeItem('currentApplication');
+                    localStorage.removeItem('candidateProfile');
+                    localStorage.removeItem('currentBooking');
+                    updateProcessDisplay();
+                    location.reload();
+                }
+            },
+
+            // 获取当前状态
+            getStatus: getFlowStatus
+        };
+    </script>
+</body>
+</html>

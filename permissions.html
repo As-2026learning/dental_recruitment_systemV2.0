@@ -997,7 +997,6 @@
                 return;
             }
 
-            // 等待 Supabase 初始化
             if (!supabaseClient) {
                 alert('系统初始化中，请稍后重试');
                 return;
@@ -1006,8 +1005,6 @@
             var users = JSON.parse(localStorage.getItem('adminUsers') || '[]');
 
             if (index === '') {
-                // 添加新用户
-                // 检查用户名是否已存在（本地）
                 var existingUser = users.find(function(u) { return u.username === username; });
                 if (existingUser) {
                     alert('用户名已存在');
@@ -1015,22 +1012,27 @@
                 }
 
                 try {
-                    // 1. 使用客户端 signUp API 创建用户
                     console.log('正在创建 Supabase 用户:', username);
-                    const { data: authData, error: authError } = await supabaseClient.auth.signUp({
-                        email: username,
-                        password: password
-                    });
-
-                    if (authError) {
-                        console.error('创建 Supabase 用户失败:', authError);
-                        if (authError.message.includes('User already registered')) {
-                            alert('该邮箱已被注册，请使用其他邮箱');
-                        } else {
-                            alert('创建用户失败: ' + authError.message);
+                    
+                    // 创建用户，添加重试机制处理安全限制
+                    const createUserWithRetry = async (attempts = 3) => {
+                        const { data: authData, error: authError } = await supabaseClient.auth.signUp({
+                            email: username,
+                            password: password
+                        });
+                        
+                        if (authError) {
+                            if (authError.message.includes('seconds') && attempts > 0) {
+                                console.log(`安全限制触发，等待后重试 (剩余尝试: ${attempts})`);
+                                await new Promise(resolve => setTimeout(resolve, 65000));
+                                return await createUserWithRetry(attempts - 1);
+                            }
+                            throw authError;
                         }
-                        return;
-                    }
+                        return authData;
+                    };
+
+                    const authData = await createUserWithRetry();
 
                     if (!authData.user) {
                         alert('创建用户失败：未返回用户信息');
@@ -1039,43 +1041,33 @@
 
                     console.log('Supabase 用户创建成功，用户ID:', authData.user.id);
 
-                    // 2. 尝试自动确认邮箱
-                    try {
-                        const { error: confirmError } = await supabaseClient.rpc('confirm_email', { 
-                            user_email: username 
-                        });
-                        if (confirmError) {
-                            console.warn('自动确认邮箱失败(RPC):', confirmError.message);
-                            // 尝试直接更新用户状态
-                            await supabaseClient.from('auth.users')
-                                .update({ email_confirmed_at: new Date().toISOString() })
-                                .eq('email', username);
-                        } else {
-                            console.log('邮箱已通过 RPC 自动确认');
+                    // 确认邮箱 - 多种方式尝试
+                    await confirmUserEmail(username);
+
+                    // 插入角色记录
+                    const insertRoleWithRetry = async (attempts = 3) => {
+                        const { error: roleError } = await supabaseClient
+                            .from('user_roles')
+                            .insert({
+                                user_id: authData.user.id,
+                                role: role,
+                                name: name
+                            });
+
+                        if (roleError) {
+                            if (roleError.code === '42501' && attempts > 0) {
+                                console.warn('RLS权限限制，等待后重试');
+                                await new Promise(resolve => setTimeout(resolve, 2000));
+                                return await insertRoleWithRetry(attempts - 1);
+                            }
+                            throw roleError;
                         }
-                    } catch (e) {
-                        console.warn('自动确认邮箱失败:', e.message);
-                    }
+                        return true;
+                    };
 
-                    // 3. 在 user_roles 表中插入角色记录
-                    console.log('正在插入角色记录:', { user_id: authData.user.id, role, name });
-                    const { error: roleError } = await supabaseClient
-                        .from('user_roles')
-                        .insert({
-                            user_id: authData.user.id,
-                            role: role,
-                            name: name
-                        });
-
-                    if (roleError) {
-                        console.error('插入角色记录失败:', roleError);
-                        alert('创建用户失败: ' + roleError.message);
-                        return;
-                    }
-
+                    await insertRoleWithRetry();
                     console.log('角色记录插入成功');
 
-                    // 3. 保存到本地存储（保持兼容性）
                     users.push({
                         username: username,
                         password: password,
@@ -1095,14 +1087,11 @@
                     alert('创建用户失败: ' + e.message);
                 }
             } else {
-                // 编辑用户
                 var userIndex = parseInt(index);
                 if (userIndex >= 0 && userIndex < users.length) {
                     var existingUser = users[userIndex];
-                    var wasChanged = false;
 
                     try {
-                        // 如果密码变更，更新 Supabase Auth
                         if (password && existingUser.password !== password) {
                             console.log('正在更新密码');
                             const { error: passwordError } = await supabaseClient.auth.updateUser({
@@ -1114,10 +1103,8 @@
                                 return;
                             }
                             existingUser.password = password;
-                            wasChanged = true;
                         }
 
-                        // 更新角色和姓名
                         if (existingUser.name !== name || existingUser.role !== role) {
                             console.log('正在更新角色记录:', { name, role });
                             const { error: roleError } = await supabaseClient
@@ -1127,17 +1114,13 @@
 
                             if (roleError) {
                                 console.warn('更新角色记录失败:', roleError);
-                                // 继续执行，至少更新本地存储
                             }
-                            wasChanged = true;
                         }
 
-                        // 更新本地存储
                         existingUser.name = name;
                         existingUser.role = role;
                         existingUser.status = status;
 
-                        // 如果编辑的是当前登录用户，更新当前用户信息
                         var currentUser = JSON.parse(localStorage.getItem('currentUser') || '{}');
                         if (currentUser.username === existingUser.username) {
                             currentUser.name = name;
@@ -1156,6 +1139,38 @@
                     }
                 }
             }
+        }
+
+        // 确认用户邮箱（多种方式尝试）
+        async function confirmUserEmail(email) {
+            try {
+                // 方式1：尝试调用 RPC 函数
+                const { error: rpcError } = await supabaseClient.rpc('confirm_email', { user_email: email });
+                if (!rpcError) {
+                    console.log('邮箱已通过 RPC 自动确认');
+                    return;
+                }
+                console.warn('RPC方式确认邮箱失败:', rpcError.message);
+            } catch (e) {
+                console.warn('RPC调用失败:', e.message);
+            }
+
+            try {
+                // 方式2：尝试直接更新 auth.users 表（需要适当权限）
+                const { error: directError } = await supabaseClient.from('auth.users')
+                    .update({ email_confirmed_at: new Date().toISOString() })
+                    .eq('email', email);
+                
+                if (!directError) {
+                    console.log('邮箱已通过直接更新确认');
+                    return;
+                }
+                console.warn('直接更新方式确认邮箱失败:', directError.message);
+            } catch (e) {
+                console.warn('直接更新失败:', e.message);
+            }
+
+            console.log('邮箱确认跳过，用户登录时将收到确认邮件');
         }
 
         // 删除用户

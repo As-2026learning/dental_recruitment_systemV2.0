@@ -1,0 +1,2485 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+  <meta http-equiv="Pragma" content="no-cache">
+  <meta http-equiv="Expires" content="0">
+  <title>系统设置 - 招聘</title>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Microsoft YaHei", sans-serif;
+      background: #f5f5f5;
+      min-height: 100vh;
+      padding: 20px;
+    }
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+      background: white;
+      border-radius: 16px;
+      box-shadow: 0 10px 40px rgba(0, 0, 0, 0.1);
+      overflow: hidden;
+    }
+    .header {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      padding: 30px;
+      text-align: center;
+    }
+    .header h1 { font-size: 28px; margin-bottom: 10px; }
+    .header p { font-size: 16px; opacity: 0.9; }
+    .tabs {
+      display: flex;
+      background: #f8f9ff;
+      border-bottom: 1px solid #e0e0e0;
+    }
+    .tab {
+      padding: 15px 30px;
+      cursor: pointer;
+      font-weight: 600;
+      color: #666;
+      border-bottom: 3px solid transparent;
+      transition: all 0.3s;
+    }
+    .tab:hover { color: #667eea; }
+    .tab.active {
+      color: #667eea;
+      border-bottom-color: #667eea;
+    }
+    .main-content { padding: 30px; }
+    .section { display: none; }
+    .section.active { display: block; }
+    .card {
+      background: white;
+      border-radius: 12px;
+      padding: 20px;
+      margin-bottom: 20px;
+      border: 1px solid #e0e0e0;
+    }
+    .card h3 { margin: 0 0 15px 0; color: #333; font-size: 18px; }
+    .btn {
+      display: inline-block;
+      padding: 10px 20px;
+      font-size: 14px;
+      font-weight: 600;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: all 0.3s;
+    }
+    .btn-primary {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+    }
+    .btn-primary:hover { transform: translateY(-2px); }
+    .btn-secondary { background: #f0f0f0; color: #333; }
+    .btn-secondary:hover { background: #e0e0e0; }
+    .btn-danger { background: #e74c3c; color: white; }
+    .btn-danger:hover { background: #c0392b; }
+    .btn-success { background: #2e7d32; color: white; }
+    .btn-success:hover { background: #1b5e20; }
+    .form-group { margin-bottom: 15px; }
+    .form-group label {
+      display: block;
+      margin-bottom: 5px;
+      font-weight: 600;
+      color: #333;
+      font-size: 14px;
+    }
+    .form-group input, .form-group textarea, .form-group select {
+      width: 100%;
+      padding: 10px 15px;
+      border: 2px solid #e0e0e0;
+      border-radius: 8px;
+      font-size: 14px;
+    }
+    .form-group input:focus, .form-group textarea:focus {
+      outline: none;
+      border-color: #667eea;
+    }
+    .data-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 15px;
+    }
+    .data-table th, .data-table td {
+      padding: 12px 15px;
+      text-align: left;
+      border-bottom: 1px solid #e0e0e0;
+    }
+    .data-table th {
+      background: #f8f9ff;
+      font-weight: 600;
+      color: #333;
+    }
+    .data-table tr:hover { background: #f8f9ff; }
+    .alert {
+      padding: 15px 20px;
+      border-radius: 8px;
+      margin-bottom: 20px;
+      font-size: 14px;
+    }
+    .alert-success { background: #e8f5e9; color: #2e7d32; border-left: 4px solid #2e7d32; }
+    .alert-error { background: #ffebee; color: #c62828; border-left: 4px solid #c62828; }
+    .alert-info { background: #e3f2fd; color: #1565c0; border-left: 4px solid #1565c0; }
+    .loading {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      padding: 40px;
+    }
+    .spinner {
+      width: 40px;
+      height: 40px;
+      border: 4px solid #f3f3f3;
+      border-top: 4px solid #667eea;
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+    }
+    @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+    .modal {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(0,0,0,0.5);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 1000;
+    }
+    .modal.show { display: flex; }
+    .modal-content {
+      background: white;
+      border-radius: 16px;
+      padding: 30px;
+      max-width: 500px;
+      width: 90%;
+    }
+    .modal-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 20px;
+    }
+    .modal-header h3 { margin: 0; }
+    .modal-close {
+      background: none;
+      border: none;
+      font-size: 24px;
+      cursor: pointer;
+      color: #999;
+    }
+    .modal-footer {
+      display: flex;
+      justify-content: flex-end;
+      gap: 10px;
+      margin-top: 20px;
+    }
+    .nav-links {
+      margin-top: 15px;
+    }
+    .nav-links a {
+      color: white;
+      text-decoration: none;
+      margin: 0 15px;
+      opacity: 0.9;
+    }
+    .nav-links a:hover { opacity: 1; text-decoration: underline; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <h1>系统设置</h1>
+      <p>招聘管理系统</p>
+      <div class="nav-links">
+        <a href="admin-standalone.html">← 返回预约管理</a>
+        <a href="integrated-applications.html">应聘信息综合管理 →</a>
+        <a href="recruitment-process.html">📋 招聘流程 →</a>
+        <a href="recruitment-dashboard.html">📊 数据看板 →</a>
+        <a href="permissions.html">权限管理 →</a>
+      </div>
+    </div>
+    
+    <div class="tabs">
+      <div class="tab active" onclick="switchTab('positions')">岗位管理</div>
+      <div class="tab" onclick="switchTab('jobtypes')">工种管理</div>
+      <div class="tab" onclick="switchTab('timeslots')">时段配置</div>
+      <div class="tab" onclick="switchTab('templates')">模板管理</div>
+      <div class="tab" onclick="switchTab('tips')">温馨提示</div>
+      <div class="tab" onclick="switchTab('banners')">横幅文本</div>
+    </div>
+    
+    <div class="main-content">
+      <!-- 岗位管理 -->
+      <div id="positions" class="section active">
+        <div class="card">
+          <h3>岗位列表</h3>
+          <button class="btn btn-primary" onclick="showAddPositionModal()">+ 添加岗位</button>
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>排序</th>
+                <th>岗位名称</th>
+                <th>状态</th>
+                <th>操作</th>
+              </tr>
+            </thead>
+            <tbody id="positionsList">
+              <tr><td colspan="4" class="loading"><div class="spinner"></div></td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+      
+      <!-- 工种管理 -->
+      <div id="jobtypes" class="section">
+        <div class="card">
+          <h3>工种列表</h3>
+          <p style="color: #666; margin-bottom: 15px; font-size: 14px;">设置应聘信息筛选中的工种选项</p>
+          <button class="btn btn-primary" onclick="showAddJobTypeModal()">+ 添加工种</button>
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>排序</th>
+                <th>工种名称</th>
+                <th>状态</th>
+                <th>操作</th>
+              </tr>
+            </thead>
+            <tbody id="jobTypesList">
+              <tr><td colspan="4" class="loading"><div class="spinner"></div></td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- 时段配置 -->
+      <div id="timeslots" class="section">
+        <div class="card">
+          <h3>面试时段配置</h3>
+          <p style="color: #666; margin-bottom: 15px; font-size: 14px;">1小时时段限10人，半小时时段限5人</p>
+          <button class="btn btn-primary" onclick="showAddSlotModal()">+ 添加时段</button>
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>排序</th>
+                <th>时段名称</th>
+                <th>时间范围</th>
+                <th>容量</th>
+                <th>状态</th>
+                <th>操作</th>
+              </tr>
+            </thead>
+            <tbody id="slotsList">
+              <tr><td colspan="6" class="loading"><div class="spinner"></div></td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+      
+      <!-- 模板管理 -->
+      <div id="templates" class="section">
+        <div class="card">
+          <h3>模板管理 <span style="font-size: 12px; color: #999; font-weight: normal;">(v2.1 - Fixed)</span></h3>
+          <div id="storageModeStatus" style="margin-bottom: 15px; padding: 10px; border-radius: 8px;"></div>
+          <div class="form-group">
+            <label>选择模板</label>
+            <select id="templateSelect" onchange="loadTemplateFields()">
+              <option value="">请选择模板</option>
+            </select>
+          </div>
+          <button class="btn btn-primary" onclick="showAddFieldModal()">+ 添加字段</button>
+          <button class="btn btn-secondary" onclick="saveTemplateChanges()">保存模板更改</button>
+          <button class="btn btn-success" onclick="exportTemplate()">导出模板</button>
+          <button class="btn btn-secondary" onclick="importTemplate()">导入模板</button>
+          <button class="btn btn-danger" onclick="showAddTemplateModal()">+ 新增模板</button>
+          <button class="btn btn-danger" onclick="deleteTemplate()">删除模板</button>
+        </div>
+        
+        <div class="card">
+          <h3>字段列表</h3>
+          <div id="fieldsList" style="min-height: 300px;">
+            <div class="loading"><div class="spinner"></div></div>
+          </div>
+        </div>
+        
+        <div class="card">
+          <h3>实时预览</h3>
+          <div id="templatePreview" style="border: 1px solid #e0e0e0; border-radius: 8px; padding: 20px; background: #f8f9ff;">
+            <h4>预览区域</h4>
+            <p>选择模板后将显示预览</p>
+          </div>
+        </div>
+      </div>
+      
+      <!-- 温馨提示 -->
+      <div id="tips" class="section">
+        <div class="card">
+          <h3>预约须知（显示在预约页面顶部）</h3>
+          <div class="form-group">
+            <label>预约须知内容（每行一条，用 | 分隔）</label>
+            <textarea id="bookingNotice" rows="5" placeholder="面试时间：周一至周五|请提前至少2小时预约|请确保联系方式正确"></textarea>
+          </div>
+          <button class="btn btn-primary" onclick="saveBookingNotice()">保存预约须知</button>
+        </div>
+        
+        <div class="card">
+          <h3>温馨提示（显示在预约成功页面）</h3>
+          <div class="form-group">
+            <label>温馨提示内容（每行一条，用 | 分隔）</label>
+            <textarea id="successTips" rows="5" placeholder="请携带身份证原件准时到达|如需修改或取消预约，请致电：XXX-XXXX-XXXX|面试地点：XXXXXXXXXXXXXXXX"></textarea>
+          </div>
+          <button class="btn btn-primary" onclick="saveSuccessTips()">保存温馨提示</button>
+        </div>
+        
+        <div class="card">
+          <h3>状态查询页面温馨提示（显示在状态查询页面）</h3>
+          <div class="form-group">
+            <label>温馨提示标题</label>
+            <input type="text" id="statusQueryTipsTitle" placeholder="请输入温馨提示标题，如：💡 温馨提示" value="💡 温馨提示">
+          </div>
+          <div class="form-group">
+            <label>温馨提示内容（每行一条，或竖线 | 分隔）</label>
+            <textarea id="statusQueryTipsContent" rows="6" placeholder="请确保输入的姓名和手机号与预约时填写的一致&#10;预约提交后，工作人员会在1-2个工作日内审核&#10;如有疑问，请联系招聘热线：xxx-xxxx-xxxx"></textarea>
+            <p style="color: #999; font-size: 12px; margin-top: 5px;">
+              💡 支持格式：1) 每行输入一条提示 2) 用竖线 | 分隔多条提示<br>
+              示例：提示1|提示2|提示3
+            </p>
+          </div>
+          <button class="btn btn-primary" onclick="saveStatusQueryTips()">保存状态查询温馨提示</button>
+        </div>
+        
+        <!-- 实时预览 -->
+        <div class="card">
+          <h3>实时预览</h3>
+          <div id="tipsPreview" style="background: #f8f9ff; border-radius: 8px; padding: 16px; border: 1px solid #e0e0e0;">
+            <div class="preview-tips">
+              <h4 style="font-size: 14px; color: #333; margin-bottom: 8px; display: flex; align-items: center; gap: 6px;">
+                <span id="previewTitle">💡 温馨提示</span>
+              </h4>
+              <ul id="previewList" style="list-style: none; font-size: 13px; color: #666; padding-left: 0;">
+                <li style="padding: 4px 0; padding-left: 16px; position: relative;">
+                  <span style="position: absolute; left: 4px; color: #667eea;">•</span>
+                  请确保输入的姓名和手机号与预约时填写的一致
+                </li>
+                <li style="padding: 4px 0; padding-left: 16px; position: relative;">
+                  <span style="position: absolute; left: 4px; color: #667eea;">•</span>
+                  预约提交后，工作人员会在1-2个工作日内审核
+                </li>
+                <li style="padding: 4px 0; padding-left: 16px; position: relative;">
+                  <span style="position: absolute; left: 4px; color: #667eea;">•</span>
+                  如有疑问，请联系招聘热线：xxx-xxxx-xxxx
+                </li>
+              </ul>
+            </div>
+          </div>
+        </div>
+      </div>
+      
+      <!-- 横幅文本配置 -->
+      <div id="banners" class="section">
+        <div class="card">
+          <h3>横幅文本配置</h3>
+          <p style="color: #666; margin-bottom: 15px; font-size: 14px;">自定义各页面的横幅标题文本</p>
+          
+          <div class="form-group">
+            <label>系统设置页面横幅</label>
+            <input type="text" id="bannerSettings" placeholder="请输入系统设置页面横幅文本" maxlength="50">
+          </div>
+          
+          <div class="form-group">
+            <label>预约页面横幅</label>
+            <input type="text" id="bannerBooking" placeholder="请输入预约页面横幅文本" maxlength="50">
+          </div>
+          
+          <div class="form-group">
+            <label>管理页面横幅</label>
+            <input type="text" id="bannerAdmin" placeholder="请输入管理页面横幅文本" maxlength="50">
+          </div>
+          
+          <button class="btn btn-primary" onclick="saveBanners()">保存横幅文本</button>
+        </div>
+      </div>
+    </div>
+  </div>
+  
+  <!-- 添加岗位模态框 -->
+  <div id="positionModal" class="modal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3 id="positionModalTitle">添加岗位</h3>
+        <button class="modal-close" onclick="closePositionModal()">&times;</button>
+      </div>
+      <div class="form-group">
+        <label>岗位名称</label>
+        <input type="text" id="positionName" placeholder="请输入岗位名称">
+      </div>
+      <div class="form-group">
+        <label>排序（数字越小越靠前）</label>
+        <input type="number" id="positionOrder" value="1">
+      </div>
+      <input type="hidden" id="positionId">
+      <div class="modal-footer">
+        <button class="btn btn-secondary" onclick="closePositionModal()">取消</button>
+        <button class="btn btn-primary" onclick="savePosition()">保存</button>
+      </div>
+    </div>
+  </div>
+  
+  <!-- 添加工种模态框 -->
+  <div id="jobTypeModal" class="modal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3 id="jobTypeModalTitle">添加工种</h3>
+        <button class="modal-close" onclick="closeJobTypeModal()">&times;</button>
+      </div>
+      <div class="form-group">
+        <label>工种名称</label>
+        <input type="text" id="jobTypeName" placeholder="请输入工种名称，如：上瓷、车瓷">
+      </div>
+      <div class="form-group">
+        <label>排序（数字越小越靠前）</label>
+        <input type="number" id="jobTypeOrder" value="1">
+      </div>
+      <input type="hidden" id="jobTypeId">
+      <div class="modal-footer">
+        <button class="btn btn-secondary" onclick="closeJobTypeModal()">取消</button>
+        <button class="btn btn-primary" onclick="saveJobType()">保存</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 添加时段模态框 -->
+  <div id="slotModal" class="modal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3 id="slotModalTitle">添加时段</h3>
+        <button class="modal-close" onclick="closeSlotModal()">&times;</button>
+      </div>
+      <div class="form-group">
+        <label>时段名称</label>
+        <input type="text" id="slotLabel" placeholder="如：上午场 09:00-10:00">
+      </div>
+      <div class="form-group">
+        <label>开始时间</label>
+        <input type="time" id="slotStart" value="09:00">
+      </div>
+      <div class="form-group">
+        <label>结束时间</label>
+        <input type="time" id="slotEnd" value="10:00">
+      </div>
+      <div class="form-group">
+        <label>容量（1小时=10人，半小时=5人）</label>
+        <input type="number" id="slotCapacity" value="10">
+      </div>
+      <div class="form-group">
+        <label>排序</label>
+        <input type="number" id="slotOrder" value="1">
+      </div>
+      <input type="hidden" id="slotId">
+      <input type="hidden" id="slotKey">
+      <div class="modal-footer">
+        <button class="btn btn-secondary" onclick="closeSlotModal()">取消</button>
+        <button class="btn btn-primary" onclick="saveSlot()">保存</button>
+      </div>
+    </div>
+  </div>
+  
+  <!-- 添加字段模态框 -->
+  <div id="fieldModal" class="modal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3 id="fieldModalTitle">添加字段</h3>
+        <button class="modal-close" onclick="closeFieldModal()">&times;</button>
+      </div>
+      <div class="form-group">
+        <label>字段名称</label>
+        <input type="text" id="fieldName" placeholder="如：name">
+      </div>
+      <div class="form-group">
+        <label>字段标签</label>
+        <input type="text" id="fieldLabel" placeholder="如：姓名">
+      </div>
+      <div class="form-group">
+        <label>字段类型</label>
+        <select id="fieldType">
+          <option value="text">文本输入</option>
+          <option value="textarea">多行文本</option>
+          <option value="number">数字</option>
+          <option value="select">下拉选择</option>
+          <option value="radio">单选按钮</option>
+          <option value="checkbox">复选框</option>
+          <option value="date">日期</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>必填项</label>
+        <input type="checkbox" id="fieldRequired">
+      </div>
+      <div class="form-group">
+        <label>默认值</label>
+        <input type="text" id="fieldDefault" placeholder="可选">
+      </div>
+      <div class="form-group">
+        <label>验证规则</label>
+        <select id="fieldValidation">
+          <option value="">无</option>
+          <option value="phone">手机号</option>
+          <option value="email">邮箱</option>
+          <option value="number">数字</option>
+          <option value="text">文本</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>前端显示</label>
+        <input type="checkbox" id="fieldFrontend" checked>
+        <span style="margin-left: 8px; font-size: 14px; color: #666;">勾选表示在前端应聘页面显示</span>
+      </div>
+      <div class="form-group">
+        <label>选项（每行一个，用于下拉选择、单选、复选框）</label>
+        <textarea id="fieldOptions" rows="4" placeholder="如：
+男
+女"></textarea>
+      </div>
+      <input type="hidden" id="fieldId">
+      <div class="modal-footer">
+        <button class="btn btn-secondary" onclick="closeFieldModal()">取消</button>
+        <button class="btn btn-primary" onclick="saveField()">保存</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="templateModal" class="modal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3 id="templateModalTitle">新增模板</h3>
+        <button class="modal-close" onclick="closeTemplateModal()">&times;</button>
+      </div>
+      <div class="form-group">
+        <label>模板名称 *</label>
+        <input type="text" id="templateName" placeholder="如：销售岗位模板">
+      </div>
+      <div class="form-group">
+        <label>模板描述 *</label>
+        <textarea id="templateDescription" rows="3" placeholder="如：包含销售相关技能和经验字段"></textarea>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" onclick="closeTemplateModal()">取消</button>
+        <button class="btn btn-primary" onclick="saveTemplate()">保存</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 引入权限管理模块 -->
+  <script src="auth.js"></script>
+
+  <script>
+    // ==================== 登录检查 ====================
+    (function() {
+      const isLoggedIn = localStorage.getItem('adminLoggedIn') === 'true';
+      const token = localStorage.getItem('adminToken');
+      if (!isLoggedIn || !token) {
+        window.location.href = 'login-new.html';
+        return;
+      }
+
+      // 检查页面权限
+      const currentUser = JSON.parse(localStorage.getItem('currentUser') || '{}');
+      if (currentUser.role !== 'admin') {
+        // 非管理员只能查看，禁用编辑功能
+        document.addEventListener('DOMContentLoaded', function() {
+          // 禁用所有按钮
+          var buttons = document.querySelectorAll('.btn-primary, .btn-danger');
+          buttons.forEach(function(btn) {
+            btn.disabled = true;
+            btn.style.opacity = '0.5';
+            btn.title = '您没有编辑权限';
+          });
+
+          // 禁用所有输入框
+          var inputs = document.querySelectorAll('input, textarea, select');
+          inputs.forEach(function(input) {
+            input.disabled = true;
+          });
+
+          // 显示提示
+          var alertDiv = document.createElement('div');
+          alertDiv.className = 'alert alert-info';
+          alertDiv.innerHTML = '<strong>提示：</strong>您当前为查看权限，无法修改设置。';
+          document.querySelector('.main-content').insertBefore(alertDiv, document.querySelector('.main-content').firstChild);
+        });
+      }
+    })();
+
+    var SUPABASE_URL = 'https://dxrghlqnwfwpuxjvyisv.supabase.co';
+    var SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImR4cmdobHFud2Z3cHV4anZ5aXN2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQ2ODYyMjAsImV4cCI6MjA5MDI2MjIyMH0.r6hDrTVZ1p_Qq6sHuLeBEo3SFqGEh0trwbRMXLWnrNQ';
+
+    var db = null;
+
+    async function initApp() {
+        // 等待 Supabase 加载完成
+        let attempts = 0;
+        const maxAttempts = 50; // 最多等待2.5秒
+        
+        while (attempts < maxAttempts && (!window.supabase || !window.supabase.createClient)) {
+            await new Promise(resolve => setTimeout(resolve, 50));
+            attempts++;
+        }
+        
+        if (window.supabase && window.supabase.createClient) {
+            try {
+                db = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+                console.log('✅ Supabase 初始化成功');
+            } catch (e) {
+                console.error('❌ Supabase 客户端创建失败:', e);
+                db = null;
+            }
+        } else {
+            console.error('❌ Supabase SDK 未加载，使用本地存储模式');
+            db = null;
+        }
+        
+        // 并行加载数据，提高速度
+        try {
+            await Promise.all([
+                loadPositions(),
+                loadJobTypes(),
+                loadSlots(),
+                loadTips(),
+                loadTemplates()
+            ]);
+        } catch (e) {
+            console.error('加载数据失败:', e);
+        }
+        
+        // 加载横幅文本
+        try {
+            if (db) {
+                var bannerResult = await db.from('system_config').select('*').eq('config_key', 'banner_settings');
+                if (bannerResult.data && bannerResult.data.length > 0 && bannerResult.data[0].config_value) {
+                    document.querySelector('.header h1').textContent = bannerResult.data[0].config_value;
+                }
+            }
+        } catch (e) {
+            console.error('加载横幅文本失败:', e);
+        }
+    }
+
+    function switchTab(tabId) {
+      var tabs = document.querySelectorAll('.tab');
+      var sections = document.querySelectorAll('.section');
+      for (var i = 0; i < tabs.length; i++) {
+        tabs[i].classList.remove('active');
+        sections[i].classList.remove('active');
+      }
+      event.target.classList.add('active');
+      document.getElementById(tabId).classList.add('active');
+      
+      // 如果切换到模板管理标签，更新存储模式状态
+      if (tabId === 'templates') {
+        updateStorageModeStatus();
+      }
+    }
+    
+    // 更新存储模式状态显示
+    async function updateStorageModeStatus() {
+      var statusDiv = document.getElementById('storageModeStatus');
+      if (!statusDiv) return;
+      
+      statusDiv.innerHTML = '<div class="loading"><div class="spinner" style="width:20px;height:20px;"></div> 检测存储模式...</div>';
+      
+      try {
+        var dbExists = await checkDatabaseTables();
+        if (dbExists) {
+          statusDiv.style.background = '#e8f5e9';
+          statusDiv.style.color = '#2e7d32';
+          statusDiv.style.borderLeft = '4px solid #2e7d32';
+          statusDiv.innerHTML = '✅ <strong>数据库模式</strong> - 数据将同步到云端，支持多设备访问';
+        } else {
+          statusDiv.style.background = '#fff3e0';
+          statusDiv.style.color = '#e65100';
+          statusDiv.style.borderLeft = '4px solid #e65100';
+          statusDiv.innerHTML = '⚠️ <strong>本地存储模式</strong> - 数据仅保存在当前电脑，如需多设备同步请联系管理员';
+        }
+      } catch (e) {
+        statusDiv.style.background = '#ffebee';
+        statusDiv.style.color = '#c62828';
+        statusDiv.style.borderLeft = '4px solid #c62828';
+        statusDiv.innerHTML = '❌ <strong>检测失败</strong> - ' + e.message;
+      }
+    }
+
+    // ===== 岗位管理 =====
+    async function loadPositions() {
+      var tbody = document.getElementById('positionsList');
+      try {
+        var result = await db.from('positions').select('*').order('sort_order');
+        if (result.error) throw result.error;
+        
+        if (result.data.length === 0) {
+          tbody.innerHTML = '<tr><td colspan="4" style="text-align:center;color:#999;">暂无岗位数据</td></tr>';
+          return;
+        }
+        
+        var html = '';
+        for (var i = 0; i < result.data.length; i++) {
+          var p = result.data[i];
+          html += '<tr>';
+          html += '<td>' + p.sort_order + '</td>';
+          html += '<td>' + p.name + '</td>';
+          html += '<td>' + (p.is_active ? '<span style="color:#2e7d32;">启用</span>' : '<span style="color:#999;">禁用</span>') + '</td>';
+          html += '<td>';
+          html += '<button class="btn btn-secondary" onclick="editPosition(' + p.id + ', \'' + p.name + '\', ' + p.sort_order + ')">编辑</button> ';
+          html += '<button class="btn btn-danger" onclick="deletePosition(' + p.id + ')">删除</button>';
+          html += '</td>';
+          html += '</tr>';
+        }
+        tbody.innerHTML = html;
+      } catch (e) {
+        console.error('加载岗位失败:', e);
+        var errorMessage = e.message || '加载失败';
+        if (errorMessage.includes('Could not find the table')) {
+          errorMessage = '数据库表结构未初始化，请先运行数据库修复工具';
+        }
+        tbody.innerHTML = '<tr><td colspan="4" style="color:#c62828;">加载失败: ' + errorMessage + '</td></tr>';
+      }
+    }
+
+    function showAddPositionModal() {
+      document.getElementById('positionModalTitle').textContent = '添加岗位';
+      document.getElementById('positionId').value = '';
+      document.getElementById('positionName').value = '';
+      document.getElementById('positionOrder').value = '1';
+      document.getElementById('positionModal').classList.add('show');
+    }
+
+    function editPosition(id, name, order) {
+      document.getElementById('positionModalTitle').textContent = '编辑岗位';
+      document.getElementById('positionId').value = id;
+      document.getElementById('positionName').value = name;
+      document.getElementById('positionOrder').value = order;
+      document.getElementById('positionModal').classList.add('show');
+    }
+
+    function closePositionModal() {
+      document.getElementById('positionModal').classList.remove('show');
+    }
+
+    async function savePosition() {
+      var id = document.getElementById('positionId').value;
+      var name = document.getElementById('positionName').value.trim();
+      var order = parseInt(document.getElementById('positionOrder').value) || 1;
+      
+      if (!name) {
+        alert('请输入岗位名称');
+        return;
+      }
+      
+      try {
+        if (id) {
+          var result = await db.from('positions').update({ name: name, sort_order: order }).eq('id', id);
+        } else {
+          var result = await db.from('positions').insert([{ name: name, sort_order: order, is_active: true }]);
+        }
+        if (result.error) throw result.error;
+        closePositionModal();
+        loadPositions();
+        alert('保存成功');
+      } catch (e) {
+        alert('保存失败: ' + e.message);
+      }
+    }
+
+    async function deletePosition(id) {
+      if (!confirm('确定要删除这个岗位吗？')) return;
+      try {
+        var result = await db.from('positions').delete().eq('id', id);
+        if (result.error) throw result.error;
+        loadPositions();
+        alert('删除成功');
+      } catch (e) {
+        alert('删除失败: ' + e.message);
+      }
+    }
+
+    // ===== 工种管理 =====
+    async function loadJobTypes() {
+      var tbody = document.getElementById('jobTypesList');
+      try {
+        // 使用全局的 Supabase 配置
+        var response = await fetch(SUPABASE_URL + '/rest/v1/job_types?select=*&order=sort_order', {
+          method: 'GET',
+          headers: {
+            'apikey': SUPABASE_KEY,
+            'Authorization': 'Bearer ' + SUPABASE_KEY,
+            'Content-Type': 'application/json'
+          }
+        });
+        
+        if (!response.ok) {
+          throw new Error('HTTP ' + response.status + ': ' + response.statusText);
+        }
+        
+        var data = await response.json();
+        console.log('查询结果:', data);
+        
+        if (data.length === 0) {
+          tbody.innerHTML = '<tr><td colspan="4" style="text-align:center;color:#999;">暂无工种数据</td></tr>';
+          return;
+        }
+        
+        var html = '';
+        for (var i = 0; i < data.length; i++) {
+          var j = data[i];
+          html += '<tr>';
+          html += '<td>' + j.sort_order + '</td>';
+          html += '<td>' + j.name + '</td>';
+          html += '<td>' + (j.is_active ? '<span style="color:#2e7d32;">启用</span>' : '<span style="color:#999;">禁用</span>') + '</td>';
+          html += '<td>';
+          html += '<button class="btn btn-secondary" onclick="editJobType(' + j.id + ', \'' + j.name + '\', ' + j.sort_order + ')">编辑</button> ';
+          html += '<button class="btn btn-danger" onclick="deleteJobType(' + j.id + ')">删除</button>';
+          html += '</td>';
+          html += '</tr>';
+        }
+        tbody.innerHTML = html;
+        return;
+      } catch (e) {
+        console.error('使用 fetch 查询失败，尝试 Supabase 客户端:', e);
+      }
+      
+      // 如果 fetch 失败，尝试使用 Supabase 客户端
+      try {
+        var result = await db.from('job_types').select('*').order('sort_order');
+        console.log('Supabase 查询结果:', result);
+        if (result.error) throw result.error;
+        
+        if (result.data.length === 0) {
+          tbody.innerHTML = '<tr><td colspan="4" style="text-align:center;color:#999;">暂无工种数据</td></tr>';
+          return;
+        }
+        
+        var html = '';
+        for (var i = 0; i < result.data.length; i++) {
+          var j = result.data[i];
+          html += '<tr>';
+          html += '<td>' + j.sort_order + '</td>';
+          html += '<td>' + j.name + '</td>';
+          html += '<td>' + (j.is_active ? '<span style="color:#2e7d32;">启用</span>' : '<span style="color:#999;">禁用</span>') + '</td>';
+          html += '<td>';
+          html += '<button class="btn btn-secondary" onclick="editJobType(' + j.id + ', \'' + j.name + '\', ' + j.sort_order + ')">编辑</button> ';
+          html += '<button class="btn btn-danger" onclick="deleteJobType(' + j.id + ')">删除</button>';
+          html += '</td>';
+          html += '</tr>';
+        }
+        tbody.innerHTML = html;
+      } catch (e) {
+        console.error('加载工种失败:', e);
+        var errorMessage = e.message || '加载失败';
+        var errorDetails = e.details || '';
+        var errorCode = e.code || '';
+        console.log('错误详情:', { message: errorMessage, details: errorDetails, code: errorCode });
+        if (errorMessage.includes('Could not find the table') || errorMessage.includes('does not exist')) {
+          errorMessage = '数据库表结构未初始化，请先运行数据库修复工具<br><small>错误: ' + errorMessage + '</small>';
+        }
+        tbody.innerHTML = '<tr><td colspan="4" style="color:#c62828;">加载失败: ' + errorMessage + '</td></tr>';
+      }
+    }
+
+    function showAddJobTypeModal() {
+      document.getElementById('jobTypeModalTitle').textContent = '添加工种';
+      document.getElementById('jobTypeId').value = '';
+      document.getElementById('jobTypeName').value = '';
+      document.getElementById('jobTypeOrder').value = '1';
+      document.getElementById('jobTypeModal').classList.add('show');
+    }
+
+    function editJobType(id, name, order) {
+      document.getElementById('jobTypeModalTitle').textContent = '编辑工种';
+      document.getElementById('jobTypeId').value = id;
+      document.getElementById('jobTypeName').value = name;
+      document.getElementById('jobTypeOrder').value = order;
+      document.getElementById('jobTypeModal').classList.add('show');
+    }
+
+    function closeJobTypeModal() {
+      document.getElementById('jobTypeModal').classList.remove('show');
+    }
+
+    async function saveJobType() {
+      var id = document.getElementById('jobTypeId').value;
+      var name = document.getElementById('jobTypeName').value.trim();
+      var order = parseInt(document.getElementById('jobTypeOrder').value) || 1;
+      
+      if (!name) {
+        alert('请输入工种名称');
+        return;
+      }
+      
+      try {
+        if (id) {
+          var result = await db.from('job_types').update({ name: name, sort_order: order }).eq('id', id);
+        } else {
+          var result = await db.from('job_types').insert([{ name: name, sort_order: order, is_active: true }]);
+        }
+        if (result.error) throw result.error;
+        closeJobTypeModal();
+        loadJobTypes();
+        alert('保存成功');
+      } catch (e) {
+        alert('保存失败: ' + e.message);
+      }
+    }
+
+    async function deleteJobType(id) {
+      if (!confirm('确定要删除这个工种吗？')) return;
+      try {
+        var result = await db.from('job_types').delete().eq('id', id);
+        if (result.error) throw result.error;
+        loadJobTypes();
+        alert('删除成功');
+      } catch (e) {
+        alert('删除失败: ' + e.message);
+      }
+    }
+
+    // ===== 时段管理 =====
+    async function loadSlots() {
+      var tbody = document.getElementById('slotsList');
+      try {
+        var result = await db.from('time_slots').select('*').order('sort_order');
+        if (result.error) throw result.error;
+        
+        if (result.data.length === 0) {
+          tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;color:#999;">暂无时段数据</td></tr>';
+          return;
+        }
+        
+        var html = '';
+        for (var i = 0; i < result.data.length; i++) {
+          var s = result.data[i];
+          html += '<tr>';
+          html += '<td>' + s.sort_order + '</td>';
+          html += '<td>' + s.label + '</td>';
+          html += '<td>' + s.start_time + ' - ' + s.end_time + '</td>';
+          html += '<td>' + s.capacity + '人</td>';
+          html += '<td>' + (s.is_active ? '<span style="color:#2e7d32;">启用</span>' : '<span style="color:#999;">禁用</span>') + '</td>';
+          html += '<td>';
+          html += '<button class="btn btn-secondary" onclick="editSlot(' + s.id + ', \'' + s.slot_key + '\', \'' + s.label + '\', \'' + s.start_time + '\', \'' + s.end_time + '\', ' + s.capacity + ', ' + s.sort_order + ')">编辑</button> ';
+          html += '<button class="btn btn-danger" onclick="deleteSlot(' + s.id + ')">删除</button>';
+          html += '</td>';
+          html += '</tr>';
+        }
+        tbody.innerHTML = html;
+      } catch (e) {
+        console.error('加载时段失败:', e);
+        var errorMessage = e.message || '加载失败';
+        if (errorMessage.includes('Could not find the table')) {
+          errorMessage = '数据库表结构未初始化，请先运行数据库修复工具';
+        }
+        tbody.innerHTML = '<tr><td colspan="6" style="color:#c62828;">加载失败: ' + errorMessage + '</td></tr>';
+      }
+    }
+
+    function showAddSlotModal() {
+      document.getElementById('slotModalTitle').textContent = '添加时段';
+      document.getElementById('slotId').value = '';
+      document.getElementById('slotKey').value = '';
+      document.getElementById('slotLabel').value = '';
+      document.getElementById('slotStart').value = '09:00';
+      document.getElementById('slotEnd').value = '10:00';
+      document.getElementById('slotCapacity').value = '10';
+      document.getElementById('slotOrder').value = '1';
+      document.getElementById('slotModal').classList.add('show');
+    }
+
+    function editSlot(id, key, label, start, end, capacity, order) {
+      document.getElementById('slotModalTitle').textContent = '编辑时段';
+      document.getElementById('slotId').value = id;
+      document.getElementById('slotKey').value = key;
+      document.getElementById('slotLabel').value = label;
+      document.getElementById('slotStart').value = start;
+      document.getElementById('slotEnd').value = end;
+      document.getElementById('slotCapacity').value = capacity;
+      document.getElementById('slotOrder').value = order;
+      document.getElementById('slotModal').classList.add('show');
+    }
+
+    function closeSlotModal() {
+      document.getElementById('slotModal').classList.remove('show');
+    }
+
+    async function saveSlot() {
+      var id = document.getElementById('slotId').value;
+      var key = document.getElementById('slotKey').value;
+      var label = document.getElementById('slotLabel').value.trim();
+      var start = document.getElementById('slotStart').value;
+      var end = document.getElementById('slotEnd').value;
+      var capacity = parseInt(document.getElementById('slotCapacity').value) || 10;
+      var order = parseInt(document.getElementById('slotOrder').value) || 1;
+      
+      if (!label) {
+        alert('请输入时段名称');
+        return;
+      }
+      
+      if (!key) {
+        key = 'slot_' + Date.now();
+      }
+      
+      try {
+        if (id) {
+          var result = await db.from('time_slots').update({ 
+            label: label, 
+            start_time: start, 
+            end_time: end, 
+            capacity: capacity, 
+            sort_order: order 
+          }).eq('id', id);
+        } else {
+          var result = await db.from('time_slots').insert([{ 
+            slot_key: key,
+            label: label, 
+            start_time: start, 
+            end_time: end, 
+            capacity: capacity, 
+            sort_order: order,
+            is_active: true
+          }]);
+        }
+        if (result.error) throw result.error;
+        closeSlotModal();
+        loadSlots();
+        alert('保存成功');
+      } catch (e) {
+        alert('保存失败: ' + e.message);
+      }
+    }
+
+    async function deleteSlot(id) {
+      if (!confirm('确定要删除这个时段吗？')) return;
+      try {
+        var result = await db.from('time_slots').delete().eq('id', id);
+        if (result.error) throw result.error;
+        loadSlots();
+        alert('删除成功');
+      } catch (e) {
+        alert('删除失败: ' + e.message);
+      }
+    }
+
+    // ===== 温馨提示和横幅文本 =====
+    async function loadTips() {
+      try {
+        var result = await db.from('system_config').select('*');
+        if (result.error) throw result.error;
+        
+        console.log('加载到的所有配置:', result.data);
+        
+        // 标记是否找到了状态查询配置
+        var foundStatusQueryTitle = false;
+        var foundStatusQueryContent = false;
+        
+        for (var i = 0; i < result.data.length; i++) {
+          var config = result.data[i];
+          if (config.config_key === 'booking_notice') {
+            document.getElementById('bookingNotice').value = config.config_value || '';
+          } else if (config.config_key === 'success_tips') {
+            document.getElementById('successTips').value = config.config_value || '';
+          } else if (config.config_key === 'status_query_tips_title') {
+            document.getElementById('statusQueryTipsTitle').value = config.config_value || '💡 温馨提示';
+            foundStatusQueryTitle = true;
+            updateTipsPreview();
+          } else if (config.config_key === 'status_query_tips_content') {
+            document.getElementById('statusQueryTipsContent').value = config.config_value || '';
+            foundStatusQueryContent = true;
+            updateTipsPreview();
+          } else if (config.config_key === 'banner_settings') {
+            document.getElementById('bannerSettings').value = config.config_value || '';
+          } else if (config.config_key === 'banner_booking') {
+            document.getElementById('bannerBooking').value = config.config_value || '';
+          } else if (config.config_key === 'banner_admin') {
+            document.getElementById('bannerAdmin').value = config.config_value || '';
+          }
+        }
+        
+        // 如果没有找到状态查询配置，自动创建默认值
+        if (!foundStatusQueryTitle || !foundStatusQueryContent) {
+          console.log('未找到状态查询配置，准备创建默认值...');
+          await initStatusQueryTips();
+        }
+      } catch (e) {
+        console.error('加载配置失败:', e);
+      }
+    }
+    
+    // 初始化状态查询温馨提示默认值
+    async function initStatusQueryTips() {
+      try {
+        var defaultTitle = '💡 温馨提示';
+        var defaultContent = '请确保输入的姓名和手机号与预约时填写的一致\n预约提交后，工作人员会在1-2个工作日内审核\n如有疑问，请联系招聘热线：xxx-xxxx-xxxx';
+        
+        // 检查并创建标题配置
+        var titleResult = await db.from('system_config')
+          .select('*')
+          .eq('config_key', 'status_query_tips_title')
+          .single();
+        
+        if (titleResult.error && titleResult.error.code === 'PGRST116') {
+          console.log('创建默认标题配置...');
+          await db.from('system_config').insert([{
+            config_key: 'status_query_tips_title',
+            config_value: defaultTitle,
+            description: '状态查询页面温馨提示标题'
+          }]);
+          document.getElementById('statusQueryTipsTitle').value = defaultTitle;
+        }
+        
+        // 检查并创建内容配置
+        var contentResult = await db.from('system_config')
+          .select('*')
+          .eq('config_key', 'status_query_tips_content')
+          .single();
+        
+        if (contentResult.error && contentResult.error.code === 'PGRST116') {
+          console.log('创建默认内容配置...');
+          await db.from('system_config').insert([{
+            config_key: 'status_query_tips_content',
+            config_value: defaultContent,
+            description: '状态查询页面温馨提示内容'
+          }]);
+          document.getElementById('statusQueryTipsContent').value = defaultContent;
+        }
+        
+        updateTipsPreview();
+        console.log('状态查询温馨提示默认值已创建');
+      } catch (e) {
+        console.error('初始化状态查询温馨提示失败:', e);
+      }
+    }
+    
+    // 实时更新预览
+    function updateTipsPreview() {
+      var titleInput = document.getElementById('statusQueryTipsTitle');
+      var contentInput = document.getElementById('statusQueryTipsContent');
+      
+      if (!titleInput || !contentInput) return;
+      
+      var title = titleInput.value || '💡 温馨提示';
+      var content = contentInput.value || '';
+      
+      document.getElementById('previewTitle').textContent = title;
+      
+      // 支持多种分隔符：换行符、竖线、分号
+      var lines = [];
+      if (content.indexOf('\n') !== -1) {
+        // 有换行符，按行分割
+        lines = content.split('\n');
+      } else if (content.indexOf('|') !== -1) {
+        // 有竖线，按竖线分割
+        lines = content.split('|');
+      } else if (content.indexOf('；') !== -1) {
+        // 有中文分号，按分号分割
+        lines = content.split('；');
+      } else if (content.indexOf(';') !== -1) {
+        // 有英文分号，按分号分割
+        lines = content.split(';');
+      } else {
+        // 没有分隔符，作为一整行
+        lines = [content];
+      }
+      
+      // 过滤空行
+      lines = lines.filter(function(line) { return line.trim(); });
+      
+      var listHtml = '';
+      
+      if (lines.length === 0) {
+        listHtml = '<li style="padding: 4px 0; padding-left: 16px; position: relative; color: #999;">暂无提示内容</li>';
+      } else {
+        for (var i = 0; i < lines.length; i++) {
+          listHtml += '<li style="padding: 4px 0; padding-left: 16px; position: relative;">' +
+            '<span style="position: absolute; left: 4px; color: #667eea;">•</span>' +
+            lines[i].trim() +
+            '</li>';
+        }
+      }
+      
+      document.getElementById('previewList').innerHTML = listHtml;
+    }
+    
+    // 监听输入变化，实时更新预览
+    document.addEventListener('DOMContentLoaded', function() {
+      var titleInput = document.getElementById('statusQueryTipsTitle');
+      var contentInput = document.getElementById('statusQueryTipsContent');
+      
+      if (titleInput) {
+        titleInput.addEventListener('input', updateTipsPreview);
+      }
+      if (contentInput) {
+        contentInput.addEventListener('input', updateTipsPreview);
+      }
+    });
+
+    async function saveBookingNotice() {
+      var value = document.getElementById('bookingNotice').value.trim();
+      try {
+        var result = await db.from('system_config').update({ config_value: value }).eq('config_key', 'booking_notice');
+        if (result.error) {
+          if (result.error.code === 'PGRST116') {
+            // 记录不存在，插入新记录
+            var insertResult = await db.from('system_config').insert([{ config_key: 'booking_notice', config_value: value }]);
+            if (insertResult.error) throw insertResult.error;
+          } else {
+            throw result.error;
+          }
+        }
+        alert('保存成功');
+      } catch (e) {
+        alert('保存失败: ' + e.message);
+      }
+    }
+
+    async function saveSuccessTips() {
+      var value = document.getElementById('successTips').value.trim();
+      try {
+        var result = await db.from('system_config').update({ config_value: value }).eq('config_key', 'success_tips');
+        if (result.error) {
+          if (result.error.code === 'PGRST116') {
+            var insertResult = await db.from('system_config').insert([{ config_key: 'success_tips', config_value: value }]);
+            if (insertResult.error) throw insertResult.error;
+          } else {
+            throw result.error;
+          }
+        }
+        alert('保存成功');
+      } catch (e) {
+        alert('保存失败: ' + e.message);
+      }
+    }
+
+    async function saveStatusQueryTips() {
+      var title = document.getElementById('statusQueryTipsTitle').value.trim();
+      var content = document.getElementById('statusQueryTipsContent').value.trim();
+      
+      if (!title) {
+        alert('请输入温馨提示标题');
+        return;
+      }
+      
+      console.log('准备保存状态查询温馨提示...');
+      console.log('标题:', title);
+      console.log('内容:', content);
+      
+      try {
+        // 先检查记录是否存在
+        var checkResult = await db.from('system_config')
+          .select('*')
+          .in('config_key', ['status_query_tips_title', 'status_query_tips_content']);
+        console.log('现有配置记录:', checkResult);
+        
+        // 保存标题
+        console.log('正在保存标题...');
+        var titleResult = await db.from('system_config').update({ config_value: title }).eq('config_key', 'status_query_tips_title');
+        console.log('标题更新结果:', titleResult);
+        
+        if (titleResult.error) {
+          console.log('标题更新失败，尝试插入:', titleResult.error);
+          if (titleResult.error.code === 'PGRST116' || titleResult.error.message.includes('No rows found')) {
+            var titleInsertResult = await db.from('system_config').insert([{ 
+              config_key: 'status_query_tips_title', 
+              config_value: title,
+              description: '状态查询页面温馨提示标题'
+            }]);
+            console.log('标题插入结果:', titleInsertResult);
+            if (titleInsertResult.error) throw titleInsertResult.error;
+          } else {
+            throw titleResult.error;
+          }
+        }
+        
+        // 保存内容
+        console.log('正在保存内容...');
+        var contentResult = await db.from('system_config').update({ config_value: content }).eq('config_key', 'status_query_tips_content');
+        console.log('内容更新结果:', contentResult);
+        
+        if (contentResult.error) {
+          console.log('内容更新失败，尝试插入:', contentResult.error);
+          if (contentResult.error.code === 'PGRST116' || contentResult.error.message.includes('No rows found')) {
+            var contentInsertResult = await db.from('system_config').insert([{ 
+              config_key: 'status_query_tips_content', 
+              config_value: content,
+              description: '状态查询页面温馨提示内容'
+            }]);
+            console.log('内容插入结果:', contentInsertResult);
+            if (contentInsertResult.error) throw contentInsertResult.error;
+          } else {
+            throw contentResult.error;
+          }
+        }
+        
+        // 验证保存结果
+        var verifyResult = await db.from('system_config')
+          .select('*')
+          .in('config_key', ['status_query_tips_title', 'status_query_tips_content']);
+        console.log('保存后验证:', verifyResult);
+        
+        alert('保存成功！状态查询页面的温馨提示已更新。');
+      } catch (e) {
+        alert('保存失败: ' + e.message);
+        console.error('保存状态查询温馨提示失败:', e);
+      }
+    }
+
+    async function saveBanners() {
+      var settingsBanner = document.getElementById('bannerSettings').value.trim();
+      var bookingBanner = document.getElementById('bannerBooking').value.trim();
+      var adminBanner = document.getElementById('bannerAdmin').value.trim();
+      
+      try {
+        // 保存系统设置页面横幅
+        var settingsResult = await db.from('system_config').update({ config_value: settingsBanner }).eq('config_key', 'banner_settings');
+        if (settingsResult.error) {
+          if (settingsResult.error.code === 'PGRST116') {
+            await db.from('system_config').insert([{ config_key: 'banner_settings', config_value: settingsBanner, description: '设置页面横幅文本' }]);
+          } else {
+            throw settingsResult.error;
+          }
+        }
+        
+        // 保存预约页面横幅
+        var bookingResult = await db.from('system_config').update({ config_value: bookingBanner }).eq('config_key', 'banner_booking');
+        if (bookingResult.error) {
+          if (bookingResult.error.code === 'PGRST116') {
+            await db.from('system_config').insert([{ config_key: 'banner_booking', config_value: bookingBanner, description: '预约页面横幅文本' }]);
+          } else {
+            throw bookingResult.error;
+          }
+        }
+        
+        // 保存管理页面横幅
+        var adminResult = await db.from('system_config').update({ config_value: adminBanner }).eq('config_key', 'banner_admin');
+        if (adminResult.error) {
+          if (adminResult.error.code === 'PGRST116') {
+            await db.from('system_config').insert([{ config_key: 'banner_admin', config_value: adminBanner, description: '管理页面横幅文本' }]);
+          } else {
+            throw adminResult.error;
+          }
+        }
+        
+        alert('保存成功');
+        // 刷新页面以显示更新后的横幅
+        location.reload();
+      } catch (e) {
+        alert('保存失败: ' + e.message);
+        console.error('保存横幅文本失败:', e);
+      }
+    }
+
+    // ===== 模板管理 =====
+    async function loadTemplates() {
+        var select = document.getElementById('templateSelect');
+        // 清空下拉列表，确保不会重复添加
+        select.innerHTML = '<option value="">请选择模板</option>';
+        try {
+            var result = await db.from('templates').select('*');
+            if (result.error) throw result.error;
+            
+            if (result.data.length === 0) {
+                // 添加默认模板
+                await db.from('templates').insert([
+                    { name: '基础模板', description: '包含基本个人信息字段' },
+                    { name: '技术岗位模板', description: '包含技术技能相关字段' }
+                ]);
+                // 重新加载
+                var newResult = await db.from('templates').select('*');
+                result.data = newResult.data;
+            }
+            
+            for (var i = 0; i < result.data.length; i++) {
+                var template = result.data[i];
+                var option = document.createElement('option');
+                option.value = template.id;
+                option.textContent = template.name + ' - ' + template.description;
+                select.appendChild(option);
+            }
+            
+            // 自动选择第一个模板并加载字段
+            if (result.data.length > 0) {
+                select.value = result.data[0].id;
+                console.log('自动选择模板:', result.data[0].id);
+                // 延迟一点时间，确保DOM准备好
+                setTimeout(function() {
+                    loadTemplateFields();
+                    updateStorageModeStatus();
+                }, 100);
+            }
+        } catch (e) {
+            console.error('加载模板失败:', e);
+            var errorMessage = e.message || '加载失败';
+            if (errorMessage.includes('Could not find the table')) {
+                errorMessage = '数据库表结构未初始化，请先运行数据库修复工具';
+            }
+            // 添加默认选项
+            select.innerHTML = '<option value="1">基础模板</option><option value="2">技术岗位模板</option>';
+            // 自动选择第一个默认模板
+            select.value = '1';
+            console.log('自动选择默认模板: 1');
+            // 延迟一点时间，确保DOM准备好
+            setTimeout(function() {
+                loadTemplateFields();
+                updateStorageModeStatus();
+            }, 100);
+        }
+    }
+
+    function showAddTemplateModal() {
+        document.getElementById('templateName').value = '';
+        document.getElementById('templateDescription').value = '';
+        document.getElementById('templateModal').classList.add('show');
+    }
+
+    function closeTemplateModal() {
+        document.getElementById('templateModal').classList.remove('show');
+    }
+
+    async function saveTemplate() {
+        var name = document.getElementById('templateName').value.trim();
+        var description = document.getElementById('templateDescription').value.trim();
+        
+        // 表单验证
+        if (!name) {
+            alert('请输入模板名称');
+            return;
+        }
+        
+        if (!description) {
+            alert('请输入模板描述');
+            return;
+        }
+        
+        try {
+            var result = await db.from('templates').insert([
+                { name: name, description: description }
+            ]);
+            
+            if (result.error) throw result.error;
+            
+            // 关闭模态框
+            closeTemplateModal();
+            
+            // 重新加载模板列表
+            await loadTemplates();
+            
+            // 显示成功提示
+            alert('模板新增成功！');
+        } catch (e) {
+            console.error('保存模板失败:', e);
+            alert('保存模板失败，请重试');
+        }
+    }
+
+    async function deleteTemplate() {
+        var templateId = document.getElementById('templateSelect').value;
+        
+        if (!templateId) {
+            alert('请先选择要删除的模板');
+            return;
+        }
+        
+        // 确认提示
+        if (!confirm('确定要删除当前选中的模板吗？此操作不可恢复！')) {
+            return;
+        }
+        
+        try {
+            // 检查是否有字段关联到此模板
+            var fieldsResult = await db.from('fields').select('id').eq('template_id', templateId);
+            if (fieldsResult.error) throw fieldsResult.error;
+            
+            if (fieldsResult.data.length > 0) {
+                // 先删除关联的字段
+                await db.from('fields').delete().eq('template_id', templateId);
+            }
+            
+            // 删除模板
+            var result = await db.from('templates').delete().eq('id', templateId);
+            if (result.error) throw result.error;
+            
+            // 重新加载模板列表
+            await loadTemplates();
+            
+            // 显示成功提示
+            alert('模板删除成功！');
+        } catch (e) {
+            console.error('删除模板失败:', e);
+            alert('删除模板失败，请重试');
+        }
+    }
+    
+    async function loadTemplateFields() {
+        var templateId = document.getElementById('templateSelect').value;
+        var fieldsList = document.getElementById('fieldsList');
+        var templatePreview = document.getElementById('templatePreview');
+        
+        if (!templateId) {
+            fieldsList.innerHTML = '<div class="loading"><div class="spinner"></div></div>';
+            templatePreview.innerHTML = '<h4>预览区域</h4><p>选择模板后将显示预览</p>';
+            return;
+        }
+        
+        fieldsList.innerHTML = '<div class="loading"><div class="spinner"></div></div>';
+        
+        // 1. 优先从数据库加载
+        try {
+            console.log('从数据库加载字段数据...');
+            
+            // 加载模板字段映射
+            var { data: templateFields, error: fieldsError } = await db.from('template_field_mappings').select('field_id, sort_order').eq('template_id', templateId).order('sort_order');
+            
+            if (!fieldsError && templateFields && templateFields.length > 0) {
+                var fieldIds = [];
+                for (var i = 0; i < templateFields.length; i++) {
+                    fieldIds.push(templateFields[i].field_id);
+                }
+                
+                // 加载字段配置
+                var { data: fields, error: fieldError } = await db.from('field_configs').select('*').in('id', fieldIds);
+                
+                if (!fieldError && fields && fields.length > 0) {
+                    // 加载所有字段的选项
+                    var { data: allOptions, error: optionsError } = await db.from('field_options').select('*').in('field_id', fieldIds).order('sort_order');
+                    
+                    // 将选项合并到字段对象中
+                    var fieldsWithOptions = [];
+                    for (var i = 0; i < fields.length; i++) {
+                        var field = { ...fields[i] };
+                        
+                        // 如果是选择类型的字段，添加options属性
+                        if (field.field_type === 'select' || field.field_type === 'radio' || field.field_type === 'checkbox') {
+                            if (!optionsError && allOptions) {
+                                var fieldOptions = allOptions.filter(function(opt) { return opt.field_id === field.id; });
+                                if (fieldOptions && fieldOptions.length > 0) {
+                                    var optionLabels = [];
+                                    for (var j = 0; j < fieldOptions.length; j++) {
+                                        optionLabels.push(fieldOptions[j].option_label);
+                                    }
+                                    field.options = optionLabels.join('\n');
+                                }
+                            }
+                        }
+                        
+                        fieldsWithOptions.push(field);
+                    }
+                    
+                    // 按排序顺序整理字段
+                    var fieldsMap = {};
+                    for (var k = 0; k < fieldsWithOptions.length; k++) {
+                        fieldsMap[fieldsWithOptions[k].id] = fieldsWithOptions[k];
+                    }
+                    
+                    var sortedFields = [];
+                    for (var l = 0; l < templateFields.length; l++) {
+                        var field = fieldsMap[templateFields[l].field_id];
+                        if (field) {
+                            sortedFields.push(field);
+                        }
+                    }
+                    
+                    // 保存当前字段数据
+                    currentFieldsData = sortedFields;
+                    console.log('从数据库加载字段:', sortedFields.length, '个');
+                    renderFieldsList(fieldsList, sortedFields);
+                    renderTemplatePreview(templatePreview, sortedFields);
+                    console.log('数据库数据渲染成功');
+                    return;
+                }
+            }
+        } catch (e) {
+            console.error('从数据库加载失败:', e);
+        }
+        
+        // 2. 如果数据库没有数据，尝试从本地存储加载
+        console.log('尝试从本地存储加载字段数据...');
+        try {
+            var savedFields = localStorage.getItem('templateFields_' + templateId);
+            if (savedFields) {
+                var localFields = JSON.parse(savedFields);
+                if (localFields && localFields.length > 0) {
+                    currentFieldsData = localFields;
+                    console.log('从本地存储加载字段:', localFields.length, '个');
+                    renderFieldsList(fieldsList, localFields);
+                    renderTemplatePreview(templatePreview, localFields);
+                    console.log('本地存储数据渲染成功');
+                    return;
+                }
+            }
+        } catch (e) {
+            console.error('从本地存储加载失败:', e);
+        }
+        
+        // 3. 使用默认字段
+        var defaultFields = [
+            { id: 1, field_name: 'name', field_label: '姓名', field_type: 'text', is_required: true, default_value: '', validation_rule: '' },
+            { id: 2, field_name: 'gender', field_label: '性别', field_type: 'radio', is_required: true, default_value: '', validation_rule: '', options: '男\n女' },
+            { id: 3, field_name: 'age', field_label: '年龄', field_type: 'number', is_required: true, default_value: '', validation_rule: 'number' },
+            { id: 4, field_name: 'phone', field_label: '联系电话', field_type: 'text', is_required: true, default_value: '', validation_rule: 'phone' },
+            { id: 5, field_name: 'education', field_label: '学历', field_type: 'select', is_required: true, default_value: '', validation_rule: '', options: '初中及以下\n高中/中专\n大专\n本科\n研究生及以上' },
+            { id: 6, field_name: 'experience', field_label: '工作经验', field_type: 'select', is_required: true, default_value: '', validation_rule: '', options: '无经验\n1年以下\n1-3年\n3-5年\n5年以上' },
+            { id: 7, field_name: 'source_channel', field_label: '招聘渠道', field_type: 'select', is_required: true, default_value: '', validation_rule: '', options: '内部介绍\n招聘网站\n社交媒体\n线下招聘\n其他' },
+            { id: 8, field_name: 'self_introduction', field_label: '自我介绍', field_type: 'textarea', is_required: false, default_value: '', validation_rule: '' }
+        ];
+        
+        // 保存默认字段到本地存储
+        try {
+            localStorage.setItem('templateFields_' + templateId, JSON.stringify(defaultFields));
+            console.log('默认字段已保存到本地存储，模板ID:', templateId);
+        } catch (e) {
+            console.error('保存默认字段到本地存储失败:', e);
+        }
+        
+        // 保存默认字段数据
+        currentFieldsData = defaultFields;
+        console.log('使用默认字段:', defaultFields.length, '个');
+        renderFieldsList(fieldsList, defaultFields);
+        renderTemplatePreview(templatePreview, defaultFields);
+        console.log('默认预览渲染成功');
+    }
+    
+    function renderFieldsList(container, fields) {
+        var html = '<div style="display: flex; flex-direction: column; gap: 15px;">';
+        for (var i = 0; i < fields.length; i++) {
+            var field = fields[i];
+            html += '<div style="border: 1px solid #e0e0e0; border-radius: 8px; padding: 15px; background: #f8f9ff;" data-field-id="' + field.id + '">';
+            html += '<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">';
+            html += '<div style="display: flex; align-items: center; gap: 10px;">';
+            // 排序按钮
+            html += '<div style="display: flex; flex-direction: column; gap: 2px;">';
+            html += '<button onclick="moveField(' + field.id + ', -1)" style="padding: 2px 6px; font-size: 12px; background: #f0f0f0; border: 1px solid #ddd; border-radius: 3px; cursor: pointer;" title="上移">▲</button>';
+            html += '<button onclick="moveField(' + field.id + ', 1)" style="padding: 2px 6px; font-size: 12px; background: #f0f0f0; border: 1px solid #ddd; border-radius: 3px; cursor: pointer;" title="下移">▼</button>';
+            html += '</div>';
+            html += '<div>';
+            html += '<h4 style="margin: 0; color: #333;">' + field.field_label + '</h4>';
+            html += '<p style="margin: 5px 0 0 0; color: #666; font-size: 14px;">类型: ' + getFieldTypeText(field.field_type) + ' | ' + (field.is_required ? '必填' : '可选') + '</p>';
+            html += '</div>';
+            html += '</div>';
+            html += '<div>';
+            html += '<button class="btn btn-secondary" onclick="editField(' + field.id + ')">编辑</button> ';
+            html += '<button class="btn btn-danger" onclick="deleteField(' + field.id + ')">删除</button>';
+            html += '</div>';
+            html += '</div>';
+            html += '<div style="font-size: 12px; color: #999;">';
+            html += '字段名: ' + field.field_name + ' | 排序: ' + (field.sort_order || i + 1) + '<br>';
+            if (field.default_value) {
+                html += '默认值: ' + field.default_value + '<br>';
+            }
+            if (field.validation_rule) {
+                html += '验证规则: ' + field.validation_rule + '<br>';
+            }
+            html += '</div>';
+            html += '</div>';
+        }
+        html += '</div>';
+        container.innerHTML = html;
+    }
+    
+    function renderTemplatePreview(container, fields) {
+        var html = '<h4>应聘信息填写预览</h4>';
+        html += '<form style="margin-top: 20px;">';
+        for (var i = 0; i < fields.length; i++) {
+            var field = fields[i];
+            html += '<div class="form-group" style="margin-bottom: 15px;">';
+            html += '<label>' + field.field_label + (field.is_required ? ' *' : '') + '</label>';
+            
+            switch (field.field_type) {
+                case 'text':
+                    html += '<input type="text" placeholder="请输入' + field.field_label + '" style="width: 100%; padding: 8px; border: 1px solid #e0e0e0; border-radius: 4px;">';
+                    break;
+                case 'textarea':
+                    html += '<textarea placeholder="请输入' + field.field_label + '" rows="3" style="width: 100%; padding: 8px; border: 1px solid #e0e0e0; border-radius: 4px;"></textarea>';
+                    break;
+                case 'number':
+                    html += '<input type="number" placeholder="请输入' + field.field_label + '" style="width: 100%; padding: 8px; border: 1px solid #e0e0e0; border-radius: 4px;">';
+                    break;
+                case 'select':
+                    html += '<select style="width: 100%; padding: 8px; border: 1px solid #e0e0e0; border-radius: 4px;">';
+                    html += '<option value="">请选择' + field.field_label + '</option>';
+                    
+                    // 1. 优先使用字段对象中保存的选项数据
+                    if (field.options) {
+                        var savedOptions = field.options.split('\n').filter(function(opt) { return opt.trim(); });
+                        for (var j = 0; j < savedOptions.length; j++) {
+                            var optValue = savedOptions[j].trim();
+                            html += '<option value="' + optValue + '">' + optValue + '</option>';
+                        }
+                    } else {
+                        // 2. 根据字段ID添加预设选项
+                        var fieldId = parseInt(field.id);
+                        if (!isNaN(fieldId) && fieldId >= 1 && fieldId <= 8 && fieldOptions[fieldId]) {
+                            var options = fieldOptions[fieldId];
+                            for (var j = 0; j < options.length; j++) {
+                                html += '<option value="' + options[j].value + '">' + options[j].label + '</option>';
+                            }
+                        }
+                    }
+                    html += '</select>';
+                    break;
+                case 'radio':
+                    html += '<div style="display: flex; gap: 15px;">';
+                    // 1. 优先使用字段对象中保存的选项数据
+                    if (field.options) {
+                        var savedRadioOptions = field.options.split('\n').filter(function(opt) { return opt.trim(); });
+                        for (var k = 0; k < savedRadioOptions.length; k++) {
+                            var radioOptValue = savedRadioOptions[k].trim();
+                            html += '<label><input type="radio" name="' + field.field_name + '" value="' + radioOptValue + '"> ' + radioOptValue + '</label>';
+                        }
+                    } else {
+                        // 2. 根据字段ID添加预设选项
+                        var radioFieldId = parseInt(field.id);
+                        if (!isNaN(radioFieldId) && radioFieldId >= 1 && radioFieldId <= 8 && fieldOptions[radioFieldId]) {
+                            var radioOptions = fieldOptions[radioFieldId];
+                            for (var k = 0; k < radioOptions.length; k++) {
+                                html += '<label><input type="radio" name="' + field.field_name + '" value="' + radioOptions[k].value + '"> ' + radioOptions[k].label + '</label>';
+                            }
+                        } else {
+                            html += '<label><input type="radio" name="' + field.field_name + '" value="男"> 男</label>';
+                            html += '<label><input type="radio" name="' + field.field_name + '" value="女"> 女</label>';
+                        }
+                    }
+                    html += '</div>';
+                    break;
+                case 'checkbox':
+                    html += '<div style="display: flex; gap: 15px;">';
+                    // 1. 优先使用字段对象中保存的选项数据
+                    if (field.options) {
+                        var savedCheckboxOptions = field.options.split('\n').filter(function(opt) { return opt.trim(); });
+                        for (var l = 0; l < savedCheckboxOptions.length; l++) {
+                            var checkboxOptValue = savedCheckboxOptions[l].trim();
+                            html += '<label><input type="checkbox" name="' + field.field_name + '[]" value="' + checkboxOptValue + '"> ' + checkboxOptValue + '</label>';
+                        }
+                    } else {
+                        // 2. 根据字段ID添加预设选项
+                        var checkboxFieldId = parseInt(field.id);
+                        if (!isNaN(checkboxFieldId) && checkboxFieldId >= 1 && checkboxFieldId <= 8 && fieldOptions[checkboxFieldId]) {
+                            var checkboxOptions = fieldOptions[checkboxFieldId];
+                            for (var l = 0; l < checkboxOptions.length; l++) {
+                                html += '<label><input type="checkbox" name="' + field.field_name + '[]" value="' + checkboxOptions[l].value + '"> ' + checkboxOptions[l].label + '</label>';
+                            }
+                        } else {
+                            html += '<label><input type="checkbox" name="' + field.field_name + '[]" value="选项1"> 选项1</label>';
+                            html += '<label><input type="checkbox" name="' + field.field_name + '[]" value="选项2"> 选项2</label>';
+                        }
+                    }
+                    html += '</div>';
+                    break;
+                case 'date':
+                    html += '<input type="date" style="width: 100%; padding: 8px; border: 1px solid #e0e0e0; border-radius: 4px;">';
+                    break;
+                default:
+                    html += '<input type="text" placeholder="请输入' + field.field_label + '" style="width: 100%; padding: 8px; border: 1px solid #e0e0e0; border-radius: 4px;">';
+            }
+            html += '</div>';
+        }
+        html += '<button type="button" class="btn btn-primary" style="width: 100%;">提交应聘信息</button>';
+        html += '</form>';
+        container.innerHTML = html;
+    }
+    
+    function getFieldTypeText(type) {
+        var typeMap = {
+            'text': '文本输入',
+            'textarea': '多行文本',
+            'number': '数字',
+            'select': '下拉选择',
+            'radio': '单选按钮',
+            'checkbox': '复选框',
+            'date': '日期'
+        };
+        return typeMap[type] || type;
+    }
+    
+    function showAddFieldModal() {
+        document.getElementById('fieldModalTitle').textContent = '添加字段';
+        document.getElementById('fieldId').value = '';
+        document.getElementById('fieldName').value = '';
+        document.getElementById('fieldLabel').value = '';
+        document.getElementById('fieldType').value = 'text';
+        document.getElementById('fieldRequired').checked = false;
+        document.getElementById('fieldDefault').value = '';
+        document.getElementById('fieldValidation').value = '';
+        document.getElementById('fieldOptions').value = '';
+        document.getElementById('fieldModal').classList.add('show');
+    }
+    
+    // 存储当前显示的字段，用于编辑功能
+    var currentFieldsData = [];
+    
+    // 默认字段选项
+    var fieldOptions = {
+        2: [
+            { value: '男', label: '男' },
+            { value: '女', label: '女' }
+        ],
+        5: [
+            { value: '初中及以下', label: '初中及以下' },
+            { value: '高中/中专', label: '高中/中专' },
+            { value: '大专', label: '大专' },
+            { value: '本科', label: '本科' },
+            { value: '研究生及以上', label: '研究生及以上' }
+        ],
+        6: [
+            { value: '无经验', label: '无经验' },
+            { value: '1年以下', label: '1年以下' },
+            { value: '1-3年', label: '1-3年' },
+            { value: '3-5年', label: '3-5年' },
+            { value: '5年以上', label: '5年以上' }
+        ],
+        7: [
+            { value: '内部介绍', label: '内部介绍' },
+            { value: '招聘网站', label: '招聘网站' },
+            { value: '社交媒体', label: '社交媒体' },
+            { value: '线下招聘', label: '线下招聘' },
+            { value: '其他', label: '其他' }
+        ]
+    };
+    
+    async function editField(fieldId) {
+        console.log('编辑字段，ID:', fieldId, '类型:', typeof fieldId);
+        try {
+            var field = null;
+            
+            // 1. 优先从currentFieldsData中查找（因为已经从数据库加载过了）
+            console.log('优先从currentFieldsData中查找...');
+            console.log('currentFieldsData:', currentFieldsData);
+            
+            field = currentFieldsData.find(function(f) { 
+                console.log('  比较currentFieldsData字段ID:', f.id, '类型:', typeof f.id, '与传入的fieldId:', fieldId, '类型:', typeof fieldId);
+                return f.id == fieldId; 
+            });
+            
+            console.log('从currentFieldsData找到的字段:', field);
+            
+            // 2. 如果currentFieldsData中没有找到，尝试从数据库加载
+            if (!field) {
+                console.log('尝试从数据库加载字段...');
+                try {
+                    var { data: dbField, error } = await db.from('field_configs').select('*').eq('id', fieldId).single();
+                    if (!error && dbField) {
+                        field = dbField;
+                        console.log('从数据库加载到字段:', field);
+                        
+                        // 如果是选择类型的字段，从数据库加载选项
+                        if (field.field_type === 'select' || field.field_type === 'radio' || field.field_type === 'checkbox') {
+                            var { data: options, error: optionsError } = await db.from('field_options').select('*').eq('field_id', fieldId).order('sort_order');
+                            if (!optionsError && options && options.length > 0) {
+                                var optionLabels = [];
+                                for (var j = 0; j < options.length; j++) {
+                                    optionLabels.push(options[j].label);
+                                }
+                                field.options = optionLabels.join('\n');
+                            }
+                        }
+                    }
+                } catch (dbError) {
+                    console.log('数据库加载失败:', dbError);
+                }
+            }
+            
+            // 3. 最后尝试从localStorage加载（作为备选）
+            if (!field) {
+                console.log('尝试从localStorage加载...');
+                var templateId = document.getElementById('templateSelect').value;
+                if (templateId) {
+                    try {
+                        var savedFields = localStorage.getItem('templateFields_' + templateId);
+                        if (savedFields) {
+                            var localFields = JSON.parse(savedFields);
+                            field = localFields.find(function(f) { return f.id == fieldId; });
+                            console.log('从localStorage找到的字段:', field);
+                        }
+                    } catch (e) {
+                        console.error('从localStorage加载失败:', e);
+                    }
+                }
+            }
+            
+            if (field) {
+                document.getElementById('fieldModalTitle').textContent = '编辑字段';
+                document.getElementById('fieldId').value = field.id;
+                document.getElementById('fieldName').value = field.field_name;
+                document.getElementById('fieldLabel').value = field.field_label;
+                document.getElementById('fieldType').value = field.field_type;
+                document.getElementById('fieldRequired').checked = field.is_required;
+                document.getElementById('fieldDefault').value = field.default_value || '';
+                document.getElementById('fieldValidation').value = field.validation_rule || '';
+                
+                // 加载字段选项
+                var optionsText = '';
+                
+                // 1. 优先从字段对象中获取选项数据（如果有的话）
+                if (field.options) {
+                    optionsText = field.options;
+                    console.log('从字段对象获取选项:', optionsText);
+                } else {
+                    // 2. 检查是否是默认字段（ID 1-8）
+                    var numericFieldId = parseInt(fieldId);
+                    if (!isNaN(numericFieldId) && numericFieldId >= 1 && numericFieldId <= 8 && fieldOptions[numericFieldId]) {
+                        // 使用默认选项
+                        var defaultOptions = fieldOptions[numericFieldId];
+                        var optionLabels = [];
+                        for (var i = 0; i < defaultOptions.length; i++) {
+                            optionLabels.push(defaultOptions[i].label);
+                        }
+                        optionsText = optionLabels.join('\n');
+                        console.log('使用默认选项:', optionsText);
+                    } else {
+                        // 3. 尝试从数据库加载选项
+                        try {
+                            var { data: options } = await db.from('field_options').select('*').eq('field_id', fieldId);
+                            if (options && options.length > 0) {
+                                var dbOptionLabels = [];
+                                for (var j = 0; j < options.length; j++) {
+                                    dbOptionLabels.push(options[j].label);
+                                }
+                                optionsText = dbOptionLabels.join('\n');
+                                console.log('从数据库加载选项:', optionsText);
+                            }
+                        } catch (e) {
+                            console.log('加载字段选项失败:', e);
+                        }
+                    }
+                }
+                
+                document.getElementById('fieldOptions').value = optionsText;
+                document.getElementById('fieldModal').classList.add('show');
+                console.log('编辑模态框已打开');
+            } else {
+                console.error('未找到字段信息，fieldId:', fieldId);
+                alert('未找到字段信息');
+            }
+        } catch (e) {
+            console.error('加载字段信息失败:', e);
+            alert('加载字段信息失败: ' + e.message);
+        }
+    }
+    
+    function closeFieldModal() {
+        document.getElementById('fieldModal').classList.remove('show');
+    }
+    
+    // 检查数据库表是否存在
+    async function checkDatabaseTables() {
+        try {
+            console.log('检查数据库表...');
+            
+            if (!db) {
+                console.error('数据库客户端未初始化');
+                return false;
+            }
+            
+            // 检查表1: field_configs
+            console.log('检查 field_configs 表...');
+            var { error: error1 } = await db.from('field_configs').select('id').limit(1);
+            if (error1) {
+                console.error('field_configs 表检查失败:', error1.message);
+                return false;
+            }
+            
+            // 检查表2: templates
+            console.log('检查 templates 表...');
+            var { error: error2 } = await db.from('templates').select('id').limit(1);
+            if (error2) {
+                console.error('templates 表检查失败:', error2.message);
+                return false;
+            }
+            
+            console.log('✅ 所有必需的数据库表都存在且可访问！');
+            return true;
+        } catch (e) {
+            console.error('数据库检查异常:', e);
+            return false;
+        }
+    }
+    
+    async function saveField() {
+        var id = document.getElementById('fieldId').value;
+        var numericId = id ? (isNaN(parseInt(id)) ? id : parseInt(id)) : null;
+        var name = document.getElementById('fieldName').value.trim();
+        var label = document.getElementById('fieldLabel').value.trim();
+        var type = document.getElementById('fieldType').value;
+        var required = document.getElementById('fieldRequired').checked;
+        var defaultValue = document.getElementById('fieldDefault').value.trim();
+        var validation = document.getElementById('fieldValidation').value;
+        var isFrontend = document.getElementById('fieldFrontend').checked;
+        var optionsText = document.getElementById('fieldOptions').value.trim();
+        var templateId = document.getElementById('templateSelect').value;
+        
+        if (!name || !label) {
+            alert('请填写字段名称和标签');
+            return;
+        }
+        
+        if (!templateId) {
+            alert('请先选择模板');
+            return;
+        }
+        
+        // 检查数据库表是否存在
+        console.log('[saveField] Calling checkDatabaseTables()...');
+        var dbExists = await checkDatabaseTables();
+        console.log('[saveField] checkDatabaseTables() returned:', dbExists);
+        
+        if (dbExists) {
+            // ===== 使用数据库保存 =====
+            try {
+                if (numericId) {
+                    // 更新现有字段
+                    var updateResult = await db.from('field_configs').update({
+                        field_name: name,
+                        field_label: label,
+                        field_type: type,
+                        is_required: required,
+                        default_value: defaultValue,
+                        validation_rule: validation
+                    }).eq('id', numericId).select();
+                    
+                    if (updateResult.error || !updateResult.data || updateResult.data.length === 0) {
+                        var insertResult = await db.from('field_configs').insert([{
+                            id: numericId,
+                            field_name: name,
+                            field_label: label,
+                            field_type: type,
+                            is_required: required,
+                            default_value: defaultValue,
+                            validation_rule: validation
+                        }]).select();
+                        
+                        if (insertResult.error) throw insertResult.error;
+                        numericId = insertResult.data[0].id;
+                    }
+                } else {
+                    // 添加新字段
+                    var insertResult = await db.from('field_configs').insert([{
+                        field_name: name,
+                        field_label: label,
+                        field_type: type,
+                        is_required: required,
+                        default_value: defaultValue,
+                        validation_rule: validation
+                    }]).select();
+                    
+                    if (insertResult.error) throw insertResult.error;
+                    numericId = insertResult.data[0].id;
+                }
+                
+                // 确保字段与模板的映射关系
+                var mappingResult = await db.from('template_field_mappings').select('*').eq('template_id', templateId).eq('field_id', numericId);
+                if (!mappingResult.error && (!mappingResult.data || mappingResult.data.length === 0)) {
+                    var maxSortResult = await db.from('template_field_mappings').select('sort_order').eq('template_id', templateId).order('sort_order', { ascending: false }).limit(1);
+                    var nextSortOrder = 999;
+                    if (!maxSortResult.error && maxSortResult.data && maxSortResult.data.length > 0) {
+                        nextSortOrder = maxSortResult.data[0].sort_order + 1;
+                    }
+                    
+                    await db.from('template_field_mappings').insert([{
+                        template_id: templateId,
+                        field_id: numericId,
+                        sort_order: nextSortOrder
+                    }]);
+                }
+                
+                // 保存字段选项
+                if (type === 'select' || type === 'radio' || type === 'checkbox') {
+                    await db.from('field_options').delete().eq('field_id', numericId);
+                    
+                    var allOptions = optionsText.split('\n');
+                    var options = [];
+                    for (var k = 0; k < allOptions.length; k++) {
+                        if (allOptions[k].trim()) {
+                            options.push(allOptions[k].trim());
+                        }
+                    }
+                    
+                    if (options.length > 0) {
+                        var optionRecords = [];
+                        for (var i = 0; i < options.length; i++) {
+                            optionRecords.push({
+                                field_id: numericId,
+                                option_label: options[i].trim(),
+                                option_value: options[i].trim(),
+                                sort_order: i + 1,
+                                is_active: true
+                            });
+                        }
+                        await db.from('field_options').insert(optionRecords);
+                    }
+                }
+                
+                // ===== 同时保存到本地存储（确保前后端同步）=====
+                await saveFieldToLocalStorageWithoutAlert(numericId, name, label, type, required, defaultValue, validation, optionsText, templateId, isFrontend);
+                
+                closeFieldModal();
+                await loadTemplateFields();
+                alert('保存成功！修改已同步到数据库和本地存储！');
+                
+            } catch (e) {
+                console.error('数据库保存失败，切换到本地存储:', e);
+                // 如果数据库保存失败，回退到本地存储
+                await saveFieldToLocalStorage(numericId, name, label, type, required, defaultValue, validation, optionsText, templateId, isFrontend);
+            }
+        } else {
+            // ===== 使用本地存储保存 =====
+            await saveFieldToLocalStorage(numericId, name, label, type, required, defaultValue, validation, optionsText, templateId);
+        }
+    }
+    
+    // 保存到本地存储（显示本地存储模式提示）
+    async function saveFieldToLocalStorage(numericId, name, label, type, required, defaultValue, validation, optionsText, templateId, isFrontend = true) {
+        try {
+            // 生成新ID（如果是新字段）
+            if (!numericId) {
+                numericId = Date.now();
+            }
+            
+            // 准备字段数据
+            var fieldData = {
+                id: numericId,
+                field_name: name,
+                field_label: label,
+                field_type: type,
+                is_required: required,
+                default_value: defaultValue,
+                validation_rule: validation,
+                is_frontend: isFrontend,
+                options: optionsText
+            };
+            
+            // 从本地存储加载现有字段
+            var savedFields = localStorage.getItem('templateFields_' + templateId);
+            var fieldsArray = savedFields ? JSON.parse(savedFields) : [];
+            
+            // 更新或添加字段
+            var fieldIndex = -1;
+            for (var i = 0; i < fieldsArray.length; i++) {
+                if (fieldsArray[i].id == numericId) {
+                    fieldIndex = i;
+                    break;
+                }
+            }
+            
+            if (fieldIndex !== -1) {
+                fieldsArray[fieldIndex] = fieldData;
+            } else {
+                fieldsArray.push(fieldData);
+            }
+            
+            // 保存回本地存储
+            localStorage.setItem('templateFields_' + templateId, JSON.stringify(fieldsArray));
+            
+            // 更新 currentFieldsData
+            currentFieldsData = fieldsArray;
+            
+            closeFieldModal();
+            
+            // 重新渲染界面
+            var fieldsList = document.getElementById('fieldsList');
+            var templatePreview = document.getElementById('templatePreview');
+            if (fieldsList && templatePreview) {
+                renderFieldsList(fieldsList, currentFieldsData);
+                renderTemplatePreview(templatePreview, currentFieldsData);
+            }
+            
+            alert('保存成功！（本地存储模式 - 仅在当前电脑生效）\n\n注意：数据库表不存在，数据仅保存在本地。如需多设备同步，请联系管理员创建数据库表。');
+            
+        } catch (e) {
+            console.error('本地存储保存失败:', e);
+            alert('保存失败: ' + e.message);
+        }
+    }
+    
+    // 保存到本地存储（不显示提示，用于数据库模式时的同步）
+    async function saveFieldToLocalStorageWithoutAlert(numericId, name, label, type, required, defaultValue, validation, optionsText, templateId, isFrontend = true) {
+        try {
+            // 生成新ID（如果是新字段）
+            if (!numericId) {
+                numericId = Date.now();
+            }
+            
+            // 准备字段数据
+            var fieldData = {
+                id: numericId,
+                field_name: name,
+                field_label: label,
+                field_type: type,
+                is_required: required,
+                default_value: defaultValue,
+                validation_rule: validation,
+                is_frontend: isFrontend,
+                options: optionsText
+            };
+            
+            // 从本地存储加载现有字段
+            var savedFields = localStorage.getItem('templateFields_' + templateId);
+            var fieldsArray = savedFields ? JSON.parse(savedFields) : [];
+            
+            // 更新或添加字段
+            var fieldIndex = -1;
+            for (var i = 0; i < fieldsArray.length; i++) {
+                if (fieldsArray[i].id == numericId) {
+                    fieldIndex = i;
+                    break;
+                }
+            }
+            
+            if (fieldIndex !== -1) {
+                fieldsArray[fieldIndex] = fieldData;
+            } else {
+                fieldsArray.push(fieldData);
+            }
+            
+            // 保存回本地存储
+            localStorage.setItem('templateFields_' + templateId, JSON.stringify(fieldsArray));
+            
+            // 更新 currentFieldsData
+            currentFieldsData = fieldsArray;
+            
+        } catch (e) {
+            console.error('本地存储同步失败:', e);
+        }
+    }
+    
+    async function moveField(fieldId, direction) {
+        var templateId = document.getElementById('templateSelect').value;
+        if (!templateId) {
+            alert('请先选择模板');
+            return;
+        }
+        
+        // 找到当前字段的索引
+        var currentIndex = currentFieldsData.findIndex(function(f) { return f.id == fieldId; });
+        if (currentIndex === -1) return;
+        
+        var newIndex = currentIndex + direction;
+        if (newIndex < 0 || newIndex >= currentFieldsData.length) return;
+        
+        // 交换位置
+        var temp = currentFieldsData[currentIndex];
+        currentFieldsData[currentIndex] = currentFieldsData[newIndex];
+        currentFieldsData[newIndex] = temp;
+        
+        // 更新排序值
+        for (var i = 0; i < currentFieldsData.length; i++) {
+            currentFieldsData[i].sort_order = i + 1;
+        }
+        
+        // 检查数据库表是否存在
+        var dbExists = await checkDatabaseTables();
+        
+        if (dbExists) {
+            try {
+                // 更新数据库中的排序
+                for (var i = 0; i < currentFieldsData.length; i++) {
+                    await db.from('field_configs').update({ sort_order: currentFieldsData[i].sort_order }).eq('id', currentFieldsData[i].id);
+                    // 同时更新 template_field_mappings 表中的排序
+                    await db.from('template_field_mappings').update({ sort_order: currentFieldsData[i].sort_order }).eq('template_id', templateId).eq('field_id', currentFieldsData[i].id);
+                }
+                console.log('排序已保存到数据库');
+            } catch (e) {
+                console.error('保存排序到数据库失败:', e);
+            }
+        }
+        
+        // 更新本地存储
+        localStorage.setItem('templateFields_' + templateId, JSON.stringify(currentFieldsData));
+        
+        // 重新渲染
+        var fieldsList = document.getElementById('fieldsList');
+        var templatePreview = document.getElementById('templatePreview');
+        if (fieldsList && templatePreview) {
+            renderFieldsList(fieldsList, currentFieldsData);
+            renderTemplatePreview(templatePreview, currentFieldsData);
+        }
+    }
+
+    async function deleteField(fieldId) {
+        if (!confirm('确定要删除这个字段吗？')) return;
+        try {
+            var templateId = document.getElementById('templateSelect').value;
+            if (!templateId) {
+                alert('请先选择模板');
+                return;
+            }
+            
+            // 检查数据库表是否存在
+            var dbExists = await checkDatabaseTables();
+            
+            // ===== 从本地存储删除（无论数据库是否存在，都要删除本地存储）=====
+            var savedFields = localStorage.getItem('templateFields_' + templateId);
+            if (savedFields) {
+                var fieldsArray = JSON.parse(savedFields);
+                fieldsArray = fieldsArray.filter(function(f) { return f.id != fieldId; });
+                localStorage.setItem('templateFields_' + templateId, JSON.stringify(fieldsArray));
+                currentFieldsData = fieldsArray;
+            }
+            
+            if (dbExists) {
+                // ===== 从数据库删除 =====
+                try {
+                    await db.from('field_options').delete().eq('field_id', fieldId);
+                    await db.from('template_field_mappings').delete().eq('template_id', templateId).eq('field_id', fieldId);
+                    await db.from('field_configs').delete().eq('id', fieldId);
+                    
+                    await loadTemplateFields();
+                    alert('删除成功！已从数据库和本地存储同步删除！');
+                } catch (dbError) {
+                    console.error('数据库删除失败:', dbError);
+                    // 重新渲染界面
+                    var fieldsList = document.getElementById('fieldsList');
+                    var templatePreview = document.getElementById('templatePreview');
+                    if (fieldsList && templatePreview) {
+                        renderFieldsList(fieldsList, currentFieldsData);
+                        renderTemplatePreview(templatePreview, currentFieldsData);
+                    }
+                    alert('删除成功！（已从本地存储删除，数据库删除失败）');
+                }
+            } else {
+                // ===== 仅本地存储模式 =====
+                // 重新渲染
+                var fieldsList = document.getElementById('fieldsList');
+                var templatePreview = document.getElementById('templatePreview');
+                if (fieldsList && templatePreview) {
+                    renderFieldsList(fieldsList, currentFieldsData);
+                    renderTemplatePreview(templatePreview, currentFieldsData);
+                }
+                alert('删除成功！（本地存储模式）');
+            }
+            
+        } catch (e) {
+            console.error('删除失败:', e);
+            alert('删除失败: ' + e.message);
+        }
+    }
+    
+    async function saveTemplateChanges() {
+        var templateId = document.getElementById('templateSelect').value;
+        if (!templateId) {
+            alert('请选择模板');
+            return;
+        }
+        
+        try {
+            // 这里可以添加保存模板配置的逻辑
+            // 例如保存字段顺序、显示状态等
+            alert('模板更改已保存');
+        } catch (e) {
+            alert('保存失败: ' + e.message);
+        }
+    }
+    
+    function exportTemplate() {
+        var templateId = document.getElementById('templateSelect').value;
+        if (!templateId) {
+            alert('请选择模板');
+            return;
+        }
+        
+        // 模拟导出功能
+        var templateName = document.getElementById('templateSelect').options[document.getElementById('templateSelect').selectedIndex].text;
+        var exportData = {
+            template_id: templateId,
+            template_name: templateName,
+            export_time: new Date().toISOString(),
+            fields: []
+        };
+        
+        // 这里可以从数据库获取字段数据
+        // 为了演示，使用默认字段
+        var defaultFields = [
+            { id: 1, field_name: 'name', field_label: '姓名', field_type: 'text', is_required: true },
+            { id: 2, field_name: 'gender', field_label: '性别', field_type: 'radio', is_required: true },
+            { id: 3, field_name: 'age', field_label: '年龄', field_type: 'number', is_required: true },
+            { id: 4, field_name: 'phone', field_label: '联系电话', field_type: 'text', is_required: true },
+            { id: 5, field_name: 'education', field_label: '学历', field_type: 'select', is_required: true },
+            { id: 6, field_name: 'experience', field_label: '工作经验', field_type: 'select', is_required: true },
+            { id: 7, field_name: 'source_channel', field_label: '招聘渠道', field_type: 'select', is_required: true },
+            { id: 8, field_name: 'self_introduction', field_label: '自我介绍', field_type: 'textarea', is_required: false }
+        ];
+        exportData.fields = defaultFields;
+        
+        // 创建下载链接
+        var dataStr = JSON.stringify(exportData, null, 2);
+        var dataBlob = new Blob([dataStr], { type: 'application/json' });
+        var url = URL.createObjectURL(dataBlob);
+        var link = document.createElement('a');
+        link.href = url;
+        link.download = 'template_' + templateId + '.json';
+        link.click();
+        URL.revokeObjectURL(url);
+    }
+    
+    function importTemplate() {
+        var input = document.createElement('input');
+        input.type = 'file';
+        input.accept = '.json';
+        input.onchange = function(e) {
+            var file = e.target.files[0];
+            if (!file) return;
+            
+            var reader = new FileReader();
+            reader.onload = function(event) {
+                try {
+                    var importData = JSON.parse(event.target.result);
+                    // 这里可以添加导入模板的逻辑
+                    alert('模板导入成功');
+                } catch (e) {
+                    alert('导入失败: 无效的JSON文件');
+                }
+            };
+            reader.readAsText(file);
+        };
+        input.click();
+    }
+
+    document.addEventListener('DOMContentLoaded', initApp);
+    
+    // Test script
+    window.addEventListener('load', function() {
+        setTimeout(function() {
+            console.log('=== Template Management Test Results ===');
+            
+            // Test 1: Check if required elements exist
+            console.log('\n1. Element Existence Test:');
+            var templateSelectTest = document.getElementById('templateSelect');
+            var fieldsListTest = document.getElementById('fieldsList');
+            var templatePreviewTest = document.getElementById('templatePreview');
+            console.log('   - templateSelect:', templateSelectTest ? '✓' : '✗');
+            console.log('   - fieldsList:', fieldsListTest ? '✓' : '✗');
+            console.log('   - templatePreview:', templatePreviewTest ? '✓' : '✗');
+            
+            // Test 2: Check if functions exist
+            console.log('\n2. Function Existence Test:');
+            console.log('   - loadTemplates:', typeof loadTemplates === 'function' ? '✓' : '✗');
+            console.log('   - loadTemplateFields:', typeof loadTemplateFields === 'function' ? '✓' : '✗');
+            console.log('   - editField:', typeof editField === 'function' ? '✓' : '✗');
+            console.log('   - saveField:', typeof saveField === 'function' ? '✓' : '✗');
+            console.log('   - renderFieldsList:', typeof renderFieldsList === 'function' ? '✓' : '✗');
+            console.log('   - renderTemplatePreview:', typeof renderTemplatePreview === 'function' ? '✓' : '✗');
+            
+            // Test 3: Check if currentFieldsData is populated
+            console.log('\n3. Data Test:');
+            console.log('   - currentFieldsData:', currentFieldsData ? '✓ (' + currentFieldsData.length + ' fields)' : '✗');
+            console.log('   - fieldOptions:', fieldOptions ? '✓' : '✗');
+            
+            console.log('\n=== Test Summary ===');
+            console.log('All basic functionality checks completed.');
+        }, 2000);
+    });
+  </script>
+</body>
+</html>

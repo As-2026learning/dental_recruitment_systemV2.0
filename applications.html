@@ -1,0 +1,2025 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>应聘与预约管理 - 招聘系统</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Microsoft YaHei", sans-serif;
+      background: #f5f5f5;
+      min-height: 100vh;
+      padding: 20px;
+    }
+    .container {
+      max-width: 1400px;
+      margin: 0 auto;
+      background: white;
+      border-radius: 16px;
+      box-shadow: 0 10px 40px rgba(0, 0, 0, 0.1);
+      overflow: hidden;
+    }
+    .header {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      padding: 30px;
+      text-align: center;
+    }
+    .header h1 { font-size: 28px; margin-bottom: 10px; }
+    .header p { font-size: 16px; opacity: 0.9; margin-bottom: 15px; }
+    .nav-links {
+      margin-top: 15px;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      gap: 15px;
+      flex-wrap: wrap;
+    }
+    .nav-links a {
+      color: white;
+      text-decoration: none;
+      margin: 0 15px;
+      opacity: 0.9;
+    }
+    .nav-links a:hover { opacity: 1; text-decoration: underline; }
+    .user-info {
+      position: absolute;
+      top: 20px;
+      right: 20px;
+      color: white;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .user-info span { font-size: 14px; }
+    .logout-btn {
+      background: rgba(255,255,255,0.2);
+      border: none;
+      color: white;
+      padding: 6px 12px;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 12px;
+    }
+    .logout-btn:hover { background: rgba(255,255,255,0.3); }
+    .main-content { padding: 30px; }
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      gap: 20px;
+      margin-bottom: 30px;
+    }
+    .stat-card {
+      background: white;
+      border-radius: 12px;
+      padding: 20px;
+      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+      border: 1px solid #eee;
+    }
+    .stat-card .stat-value { font-size: 28px; font-weight: 700; color: #667eea; margin-bottom: 5px; }
+    .stat-card .stat-label { color: #666; font-size: 14px; }
+    .admin-filters {
+      display: flex;
+      gap: 15px;
+      flex-wrap: wrap;
+      margin-bottom: 20px;
+      padding: 20px;
+      background: #f8f9ff;
+      border-radius: 12px;
+    }
+    .admin-filters select, .admin-filters input {
+      padding: 10px 15px;
+      border: 2px solid #e0e0e0;
+      border-radius: 8px;
+      font-size: 14px;
+    }
+    .data-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 20px;
+      font-size: 14px;
+    }
+    .data-table th, .data-table td {
+      padding: 12px 15px;
+      text-align: left;
+      border-bottom: 1px solid #e0e0e0;
+    }
+    .data-table th {
+      background: #f8f9ff;
+      font-weight: 600;
+      color: #333;
+      font-size: 13px;
+    }
+    .data-table tr:hover { background: #f8f9ff; }
+    .status {
+      display: inline-block;
+      padding: 4px 12px;
+      border-radius: 20px;
+      font-size: 12px;
+      font-weight: 600;
+    }
+    .status-pending { background: #fff3e0; color: #e65100; }
+    .status-processed { background: #e8f5e9; color: #2e7d32; }
+    .status-rejected { background: #ffebee; color: #c62828; }
+    .booking-status {
+      display: inline-block;
+      padding: 3px 10px;
+      border-radius: 15px;
+      font-size: 11px;
+      font-weight: 600;
+    }
+    .booking-status-pending { background: #e3f2fd; color: #1565c0; }
+    .booking-status-confirmed { background: #e8f5e9; color: #2e7d32; }
+    .booking-status-cancelled { background: #ffebee; color: #c62828; }
+    .booking-status-none { background: #f5f5f5; color: #999; }
+    .action-btn {
+      padding: 6px 12px;
+      font-size: 12px;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      margin-right: 5px;
+      transition: all 0.3s;
+    }
+    .action-btn-view { background: #2196f3; color: white; }
+    .action-btn-view:hover { background: #1976d2; }
+    .action-btn-process { background: #4caf50; color: white; }
+    .action-btn-process:hover { background: #388e3c; }
+    .action-btn-reject { background: #f44336; color: white; }
+    .action-btn-reject:hover { background: #d32f2f; }
+    .action-btn-delete { background: #757575; color: white; }
+    .action-btn-delete:hover { background: #616161; }
+    .action-btn-bulk-delete { background: #f44336; color: white; }
+    .action-btn-bulk-delete:hover { background: #d32f2f; }
+    .checkbox-cell { width: 40px; text-align: center; }
+    .checkbox-cell input[type="checkbox"] { width: 18px; height: 18px; cursor: pointer; }
+    .bulk-actions { display: flex; gap: 10px; align-items: center; }
+    .bulk-actions-info { color: #666; font-size: 14px; }
+    .action-btn-booking { background: #ff9800; color: white; }
+    .action-btn-booking:hover { background: #f57c00; }
+    .alert {
+      padding: 15px 20px;
+      border-radius: 8px;
+      margin-bottom: 20px;
+      font-size: 14px;
+    }
+    .alert-error { background: #ffebee; color: #c62828; border-left: 4px solid #c62828; }
+    .alert-success { background: #e8f5e9; color: #2e7d32; border-left: 4px solid #2e7d32; }
+    .alert-info { background: #e3f2fd; color: #1565c0; border-left: 4px solid #1565c0; }
+    .loading {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      padding: 40px;
+    }
+    .spinner {
+      width: 40px;
+      height: 40px;
+      border: 4px solid #f3f3f3;
+      border-top: 4px solid #667eea;
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+    }
+    @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+    .empty-state { text-align: center; padding: 60px 20px; color: #999; }
+    .empty-state p { font-size: 16px; }
+    #loading {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(255,255,255,0.95);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-direction: column;
+      z-index: 9999;
+    }
+    #loading.hidden { display: none; }
+    .btn {
+      display: inline-block;
+      padding: 10px 20px;
+      font-size: 14px;
+      font-weight: 600;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: all 0.3s;
+      text-decoration: none;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+    }
+    .btn:hover { transform: translateY(-2px); }
+    .btn-secondary { background: #9e9e9e; }
+    .btn-secondary:hover { background: #757575; }
+    .btn-danger { background: #f44336; }
+    .btn-danger:hover { background: #d32f2f; }
+    .progress-container {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 4px;
+      background: #f1f1f1;
+      z-index: 10000;
+    }
+    .progress-bar {
+      height: 100%;
+      background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
+      width: 0%;
+      transition: width 0.3s ease;
+    }
+    .modal {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(0,0,0,0.5);
+      z-index: 1000;
+      align-items: center;
+      justify-content: center;
+    }
+    .modal-content {
+      background: white;
+      border-radius: 16px;
+      padding: 30px;
+      max-width: 800px;
+      width: 90%;
+      max-height: 85vh;
+      overflow-y: auto;
+    }
+    .modal-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 20px;
+      padding-bottom: 15px;
+      border-bottom: 2px solid #f0f0f0;
+    }
+    .modal-header h3 { margin: 0; color: #333; }
+    .close-btn {
+      background: none;
+      border: none;
+      font-size: 28px;
+      cursor: pointer;
+      color: #999;
+    }
+    .close-btn:hover { color: #333; }
+    .detail-section {
+      margin-bottom: 25px;
+      padding: 20px;
+      background: #f8f9ff;
+      border-radius: 12px;
+    }
+    .detail-section h4 {
+      color: #667eea;
+      margin-bottom: 15px;
+      font-size: 16px;
+      border-bottom: 2px solid #e0e0e0;
+      padding-bottom: 10px;
+    }
+    .detail-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+      gap: 15px;
+    }
+    .detail-item {
+      display: flex;
+      flex-direction: column;
+    }
+    .detail-item strong {
+      color: #666;
+      font-size: 13px;
+      margin-bottom: 5px;
+    }
+    .detail-item span {
+      color: #333;
+      font-size: 15px;
+    }
+    .booking-info {
+      background: linear-gradient(135deg, #f5f7fa 0%, #e4e8ec 100%);
+      padding: 20px;
+      border-radius: 12px;
+      margin-top: 15px;
+    }
+    .booking-info h4 {
+      color: #667eea;
+      margin-bottom: 15px;
+      font-size: 16px;
+    }
+    .booking-actions {
+      margin-top: 15px;
+      display: flex;
+      gap: 10px;
+    }
+    .export-preview {
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      background: white;
+      border-radius: 16px;
+      padding: 30px;
+      max-width: 800px;
+      width: 90%;
+      max-height: 80vh;
+      overflow-y: auto;
+      z-index: 1000;
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+    }
+    .export-preview .preview-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 20px;
+    }
+    .export-preview .preview-header h3 { margin: 0; }
+    .export-preview .preview-header button {
+      background: none;
+      border: none;
+      font-size: 24px;
+      cursor: pointer;
+      color: #999;
+    }
+    .export-preview .preview-content { margin-bottom: 20px; }
+    .export-preview .preview-actions {
+      display: flex;
+      gap: 10px;
+      justify-content: flex-end;
+    }
+    .export-history { margin-top: 30px; }
+    .export-history h3 { margin-bottom: 15px; }
+    .export-history table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+    .export-history th, .export-history td {
+      padding: 10px;
+      text-align: left;
+      border-bottom: 1px solid #e0e0e0;
+    }
+    .export-history th { background: #f8f9ff; font-weight: 600; }
+    .tabs {
+      display: flex;
+      gap: 5px;
+      margin-bottom: 20px;
+      border-bottom: 2px solid #e0e0e0;
+    }
+    .tab {
+      padding: 12px 24px;
+      cursor: pointer;
+      border: none;
+      background: none;
+      font-size: 14px;
+      font-weight: 500;
+      color: #666;
+      border-bottom: 2px solid transparent;
+      margin-bottom: -2px;
+    }
+    .tab.active {
+      color: #667eea;
+      border-bottom-color: #667eea;
+      background: #f8f9ff;
+    }
+    .tab:hover { color: #667eea; }
+    .tab-content { display: none; }
+    .tab-content.active { display: block; }
+    @media (max-width: 768px) {
+      .admin-filters { flex-direction: column; }
+      .data-table { font-size: 12px; }
+      .data-table th, .data-table td { padding: 8px 10px; }
+      .nav-links { flex-direction: column; gap: 10px; }
+      .user-info { position: static; margin-top: 15px; }
+      .detail-grid { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+  <div id="loading">
+    <div class="spinner"></div>
+    <p style="margin-top:20px;color:#666;">正在加载管理系统...</p>
+  </div>
+
+  <div class="progress-container" id="progressContainer" style="display: none;">
+    <div class="progress-bar" id="progressBar"></div>
+  </div>
+
+  <div class="container">
+    <div class="header">
+      <div class="user-info" id="userInfo" style="display: none;">
+        <span id="userName">管理员</span>
+        <span id="userRole">管理员</span>
+        <button class="logout-btn" onclick="logout()">退出</button>
+      </div>
+      <h1>应聘与预约管理</h1>
+      <p>招聘管理系统 - 整合版</p>
+      <div class="nav-links">
+        <a href="booking.html">← 返回预约页面</a>
+        <a href="settings.html">系统设置</a>
+        <a href="permissions.html">权限管理 →</a>
+      </div>
+    </div>
+    
+    <div class="main-content">
+      <!-- 统计卡片 -->
+      <div class="stats-grid" id="statsGrid">
+        <div class="stat-card">
+          <div class="stat-value" id="totalApplications">-</div>
+          <div class="stat-label">总应聘数</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-value" id="pendingApplications">-</div>
+          <div class="stat-label">待处理</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-value" id="totalBookings">-</div>
+          <div class="stat-label">总预约数</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-value" id="pendingBookings">-</div>
+          <div class="stat-label">待确认预约</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-value" id="todayBookings">-</div>
+          <div class="stat-label">今日预约</div>
+        </div>
+      </div>
+
+      <!-- 标签页 -->
+      <div class="tabs">
+        <button class="tab active" onclick="switchTab('applications')">应聘信息管理</button>
+        <button class="tab" onclick="switchTab('bookings')">面试预约管理</button>
+      </div>
+
+      <!-- 应聘信息标签页 -->
+      <div id="applicationsTab" class="tab-content active">
+        <div class="admin-filters">
+          <select id="filterPosition" onchange="loadApplications()">
+            <option value="">全部岗位</option>
+          </select>
+          <select id="filterStatus" onchange="loadApplications()">
+            <option value="">全部状态</option>
+            <option value="pending">待处理</option>
+            <option value="processed">已处理</option>
+            <option value="rejected">已拒绝</option>
+          </select>
+          <select id="filterBookingStatus" onchange="loadApplications()">
+            <option value="">全部预约状态</option>
+            <option value="has_booking">已预约</option>
+            <option value="no_booking">未预约</option>
+            <option value="pending">待确认</option>
+            <option value="confirmed">已确认</option>
+          </select>
+          <input type="text" id="filterSearch" placeholder="搜索姓名/电话" onkeyup="loadApplications()" style="width: 200px;">
+          <button class="btn" onclick="showExportPreview()">导出Excel</button>
+        </div>
+        <div class="admin-filters" id="applicationsBulkActions" style="display: none;">
+          <div class="bulk-actions">
+            <span class="bulk-actions-info" id="applicationsSelectedCount">已选择 0 条记录</span>
+            <button class="btn btn-danger" onclick="bulkDeleteApplications()">批量删除</button>
+            <button class="btn btn-secondary" onclick="clearApplicationSelections()">取消选择</button>
+          </div>
+        </div>
+
+        <div id="applicationsContainer">
+          <div class="loading"><div class="spinner"></div></div>
+        </div>
+      </div>
+
+      <!-- 预约管理标签页 -->
+      <div id="bookingsTab" class="tab-content">
+        <div class="admin-filters">
+          <select id="filterBookingDate" onchange="loadBookings()">
+            <option value="">全部日期</option>
+            <option value="today">今天</option>
+            <option value="week">本周</option>
+            <option value="month">本月</option>
+          </select>
+          <select id="filterBookingStatus2" onchange="loadBookings()">
+            <option value="">全部状态</option>
+            <option value="pending">待确认</option>
+            <option value="confirmed">已确认</option>
+            <option value="cancelled">已取消</option>
+          </select>
+          <select id="filterTimeSlot" onchange="loadBookings()">
+            <option value="">全部时段</option>
+            <option value="slot_1">上午场 09:00-10:00</option>
+            <option value="slot_2">上午场 10:00-10:30</option>
+            <option value="slot_3">下午场 13:00-14:00</option>
+            <option value="slot_4">下午场 14:00-15:00</option>
+            <option value="slot_5">下午场 15:00-15:30</option>
+          </select>
+          <input type="text" id="filterBookingSearch" placeholder="搜索姓名/电话/岗位" onkeyup="loadBookings()" style="width: 200px;">
+          <button class="btn" onclick="exportBookingsToExcel()">导出预约</button>
+        </div>
+        <div class="admin-filters" id="bookingsBulkActions" style="display: none;">
+          <div class="bulk-actions">
+            <span class="bulk-actions-info" id="bookingsSelectedCount">已选择 0 条记录</span>
+            <button class="btn btn-danger" onclick="bulkDeleteBookings()">批量删除</button>
+            <button class="btn btn-secondary" onclick="clearBookingSelections()">取消选择</button>
+          </div>
+        </div>
+
+        <div id="bookingsContainer">
+          <div class="loading"><div class="spinner"></div></div>
+        </div>
+      </div>
+
+      <div class="export-history" id="exportHistory">
+        <h3>导出历史记录</h3>
+        <div id="historyContainer">
+          <div class="empty-state"><p>暂无导出记录</p></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 查看详情模态框 -->
+  <div id="detailModal" class="modal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3>应聘详情</h3>
+        <button class="close-btn" onclick="closeModal('detailModal')">&times;</button>
+      </div>
+      <div id="detailContent"></div>
+    </div>
+  </div>
+
+  <!-- 预约详情模态框 -->
+  <div id="bookingModal" class="modal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3>预约详情</h3>
+        <button class="close-btn" onclick="closeModal('bookingModal')">&times;</button>
+      </div>
+      <div id="bookingContent"></div>
+    </div>
+  </div>
+
+  <!-- 导出预览模态框 -->
+  <div id="exportPreviewModal" class="export-preview" style="display: none;">
+    <div class="preview-header">
+      <h3>导出数据预览</h3>
+      <button onclick="document.getElementById('exportPreviewModal').style.display = 'none'">×</button>
+    </div>
+    <div class="preview-content" id="previewContent">
+      <p>正在生成预览...</p>
+    </div>
+    <div class="preview-actions">
+      <button class="btn btn-secondary" onclick="document.getElementById('exportPreviewModal').style.display = 'none'">取消</button>
+      <button class="btn" onclick="exportToExcel()">确认导出</button>
+    </div>
+  </div>
+
+  <script>
+    var SUPABASE_URL = 'https://dxrghlqnwfwpuxjvyisv.supabase.co';
+    var SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImR4cmdobHFud2Z3cHV4anZ5aXN2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQ2ODYyMjAsImV4cCI6MjA5MDI2MjIyMH0.r6hDrTVZ1p_Qq6sHuLeBEo3SFqGEh0trwbRMXLWnrNQ';
+
+    var TIME_SLOTS = {
+      slot_1: { label: '上午场 09:00-10:00', capacity: 10 },
+      slot_2: { label: '上午场 10:00-10:30', capacity: 5 },
+      slot_3: { label: '下午场 13:00-14:00', capacity: 10 },
+      slot_4: { label: '下午场 14:00-15:00', capacity: 10 },
+      slot_5: { label: '下午场 15:00-15:30', capacity: 5 }
+    };
+
+    var db = null;
+    var allApplications = [];
+    var allBookings = [];
+    var positions = [];
+    var currentUser = null;
+    var exportHistory = [];
+    var currentTab = 'applications';
+    var sortField = 'created_at';
+    var sortDirection = 'desc';
+    var bookingSortField = 'booking_date';
+    var bookingSortDirection = 'asc';
+
+    function formatDate(d) {
+      var y = d.getFullYear();
+      var m = String(d.getMonth() + 1).padStart(2, '0');
+      var day = String(d.getDate()).padStart(2, '0');
+      return y + '-' + m + '-' + day;
+    }
+
+    function formatDateTime(d) {
+      var date = formatDate(d);
+      var h = String(d.getHours()).padStart(2, '0');
+      var min = String(d.getMinutes()).padStart(2, '0');
+      return date + ' ' + h + ':' + min;
+    }
+
+    function loadSDK() {
+      var cdnList = [
+        'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js',
+        'https://unpkg.com/@supabase/supabase-js@2/dist/umd/supabase.min.js'
+      ];
+      var index = 0;
+
+      function tryLoad() {
+        if (index >= cdnList.length) {
+          document.getElementById('applicationsContainer').innerHTML = '<div class="alert alert-error">系统加载失败，请检查网络后刷新页面</div>';
+          document.getElementById('loading').classList.add('hidden');
+          return;
+        }
+        var script = document.createElement('script');
+        script.src = cdnList[index];
+        script.onload = function() { initApp(); };
+        script.onerror = function() { index++; tryLoad(); };
+        document.head.appendChild(script);
+      }
+      tryLoad();
+    }
+
+    async function initApp() {
+      db = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+      await checkAuth();
+      await loadPositions();
+      loadApplications();
+      loadStats();
+      loadExportHistory();
+      document.getElementById('loading').classList.add('hidden');
+    }
+
+    async function checkAuth() {
+      try {
+        var userData = localStorage.getItem('user');
+        if (userData) {
+          currentUser = JSON.parse(userData);
+          updateUserInfo();
+        } else {
+          currentUser = { id: '1', name: '管理员', role: 'admin' };
+          localStorage.setItem('user', JSON.stringify(currentUser));
+          updateUserInfo();
+        }
+      } catch (e) {
+        console.error('认证检查失败:', e);
+        currentUser = { id: '1', name: '管理员', role: 'admin' };
+        localStorage.setItem('user', JSON.stringify(currentUser));
+        updateUserInfo();
+      }
+    }
+
+    function updateUserInfo() {
+      if (currentUser) {
+        document.getElementById('userName').textContent = currentUser.name;
+        document.getElementById('userRole').textContent = currentUser.role === 'admin' ? '管理员' : '普通用户';
+        document.getElementById('userInfo').style.display = 'flex';
+      }
+    }
+
+    function logout() {
+      localStorage.removeItem('user');
+      currentUser = null;
+      location.reload();
+    }
+
+    function checkPermission(action) {
+      if (!currentUser) {
+        alert('请先登录');
+        return false;
+      }
+      if (action === 'export' || action === 'viewAll') {
+        return currentUser.role === 'admin';
+      }
+      return true;
+    }
+
+    function switchTab(tab) {
+      currentTab = tab;
+      var tabs = document.querySelectorAll('.tab');
+      tabs.forEach(function(t) { t.classList.remove('active'); });
+      event.target.classList.add('active');
+
+      document.querySelectorAll('.tab-content').forEach(function(content) {
+        content.classList.remove('active');
+      });
+      document.getElementById(tab + 'Tab').classList.add('active');
+
+      if (tab === 'bookings' && allBookings.length === 0) {
+        loadBookings();
+      }
+    }
+
+    function closeModal(modalId) {
+      document.getElementById(modalId).style.display = 'none';
+    }
+
+    function loadExportHistory() {
+      var history = localStorage.getItem('exportHistory');
+      if (history) {
+        exportHistory = JSON.parse(history);
+        renderExportHistory();
+      }
+    }
+
+    function addExportHistory(record) {
+      exportHistory.unshift(record);
+      if (exportHistory.length > 10) {
+        exportHistory = exportHistory.slice(0, 10);
+      }
+      localStorage.setItem('exportHistory', JSON.stringify(exportHistory));
+      renderExportHistory();
+    }
+
+    function renderExportHistory() {
+      var container = document.getElementById('historyContainer');
+      if (exportHistory.length === 0) {
+        container.innerHTML = '<div class="empty-state"><p>暂无导出记录</p></div>';
+        return;
+      }
+
+      var html = '<table class="data-table"><thead><tr>';
+      html += '<th>时间</th><th>导出数量</th><th>操作人</th><th>文件名称</th>';
+      html += '</tr></thead><tbody>';
+
+      for (var i = 0; i < exportHistory.length; i++) {
+        var record = exportHistory[i];
+        html += '<tr>';
+        html += '<td>' + record.timestamp + '</td>';
+        html += '<td>' + record.count + ' 条</td>';
+        html += '<td>' + record.user + '</td>';
+        html += '<td>' + record.filename + '</td>';
+        html += '</tr>';
+      }
+
+      html += '</tbody></table>';
+      container.innerHTML = html;
+    }
+
+    async function loadPositions() {
+      try {
+        var result = await db.from('positions').select('*').eq('is_active', true).order('sort_order');
+        if (result.data && result.data.length > 0) {
+          positions = result.data;
+        }
+
+        var positionSelect = document.getElementById('filterPosition');
+        for (var i = 0; i < positions.length; i++) {
+          var option = document.createElement('option');
+          option.value = positions[i].name;
+          option.textContent = positions[i].name;
+          positionSelect.appendChild(option);
+        }
+      } catch (e) {
+        console.error('加载岗位失败:', e);
+      }
+    }
+
+    async function loadStats() {
+      try {
+        var today = formatDate(new Date());
+        
+        // 加载应聘统计
+        var appResult = await db.from('applications').select('*');
+        if (!appResult.error) {
+          var appData = appResult.data;
+          var total = appData.length;
+          var pending = total; // 因为没有status字段，所有记录都视为待处理
+          document.getElementById('totalApplications').textContent = total;
+          document.getElementById('pendingApplications').textContent = pending;
+        }
+
+        // 加载预约统计
+        var bookingResult = await db.from('bookings').select('status, booking_date');
+        if (!bookingResult.error) {
+          var bookingData = bookingResult.data;
+          var totalBookings = bookingData.length;
+          var pendingBookings = 0;
+          var todayBookings = 0;
+          for (var i = 0; i < bookingData.length; i++) {
+            if (bookingData[i].status === 'pending') pendingBookings++;
+            if (bookingData[i].booking_date === today) todayBookings++;
+          }
+          document.getElementById('totalBookings').textContent = totalBookings;
+          document.getElementById('pendingBookings').textContent = pendingBookings;
+          document.getElementById('todayBookings').textContent = todayBookings;
+        }
+      } catch (e) {
+        console.error('加载统计失败:', e);
+      }
+    }
+
+    async function loadApplications() {
+      var container = document.getElementById('applicationsContainer');
+      container.innerHTML = '<div class="loading"><div class="spinner"></div></div>';
+
+      try {
+        // 加载数据库中的应聘信息
+        var dbApplications = [];
+        try {
+          var query = db.from('applications').select('*');
+          var positionFilter = document.getElementById('filterPosition').value;
+          var statusFilter = document.getElementById('filterStatus').value;
+
+          if (positionFilter) query = query.eq('position', positionFilter);
+          if (statusFilter) query = query.eq('status', statusFilter);
+
+          var result = await query.order('created_at', { ascending: false });
+          if (!result.error && result.data) {
+            dbApplications = result.data;
+          }
+        } catch (dbError) {
+          console.log('数据库加载失败，将使用本地存储数据:', dbError.message);
+        }
+
+        // 加载本地存储中的应聘信息
+        var localApplications = [];
+        try {
+          var localApps = localStorage.getItem('applications');
+          if (localApps) {
+            localApplications = JSON.parse(localApps);
+            // 过滤掉已经在数据库中的记录
+            localApplications = localApplications.filter(localApp => {
+              return !dbApplications.some(dbApp => dbApp.id === localApp.id);
+            });
+          }
+        } catch (localError) {
+          console.log('本地存储加载失败:', localError.message);
+        }
+
+        // 合并数据库和本地存储的应聘信息
+        var allApplicationsData = [...dbApplications, ...localApplications];
+        
+        // 加载预约信息
+        var bookingsResult = await db.from('bookings').select('*');
+        var allBookings = bookingsResult.error ? [] : bookingsResult.data;
+
+        console.log('加载到的数据库应聘信息数量:', dbApplications.length);
+        console.log('加载到的本地存储应聘信息数量:', localApplications.length);
+        console.log('加载到的预约信息数量:', allBookings.length);
+
+        // 合并应聘信息和预约信息
+        var applicationsWithBooking = allApplicationsData.map(app => {
+          var dynamicFields = app.dynamic_fields || app.form_data || app.fields || {};
+          var phone = app.phone || dynamicFields.phone || '';
+          var name = app.name || dynamicFields.name || '';
+          var position = app.position || dynamicFields.position || '';
+          
+          console.log('处理应聘信息:', app.id, '姓名:', name, '电话:', phone, '岗位:', position);
+          
+          // 首先尝试通过 application_id 关联
+          var bookingsByAppId = allBookings.filter(b => b.application_id === app.id);
+          console.log('通过 application_id 找到的预约:', bookingsByAppId.length);
+          
+          // 如果没有通过 application_id 找到，尝试通过电话关联
+          var bookingsByPhone = [];
+          if (phone) {
+            bookingsByPhone = allBookings.filter(b => b.phone === phone);
+            console.log('通过电话找到的预约:', bookingsByPhone.length);
+          }
+          
+          // 合并所有找到的预约
+          var allBookingsForApp = [...bookingsByAppId, ...bookingsByPhone];
+          var booking = allBookingsForApp.length > 0 ? allBookingsForApp.sort((a, b) => new Date(b.created_at) - new Date(a.created_at))[0] : null;
+          
+          if (booking) {
+            console.log('关联到预约:', booking.id, '日期:', booking.booking_date);
+          }
+          
+          return { 
+            ...app, 
+            booking: booking,
+            // 确保关键字段存在
+            name: name,
+            phone: phone,
+            position: position,
+            // 添加来源标识
+            source: app.id.toString().startsWith('local_') ? 'local' : 'database'
+          };
+        });
+
+        // 按创建时间排序
+        applicationsWithBooking.sort((a, b) => {
+          var dateA = new Date(a.created_at || a.createdAt || 0);
+          var dateB = new Date(b.created_at || b.createdAt || 0);
+          return dateB - dateA;
+        });
+
+        // 预约状态筛选
+        var bookingStatusFilter = document.getElementById('filterBookingStatus').value;
+        if (bookingStatusFilter) {
+          applicationsWithBooking = applicationsWithBooking.filter(app => {
+            if (bookingStatusFilter === 'has_booking') return app.booking !== null;
+            if (bookingStatusFilter === 'no_booking') return app.booking === null;
+            if (app.booking) return app.booking.status === bookingStatusFilter;
+            return false;
+          });
+        }
+
+        // 搜索筛选
+        var searchTerm = document.getElementById('filterSearch').value.toLowerCase();
+        if (searchTerm) {
+          applicationsWithBooking = applicationsWithBooking.filter(app => {
+            var dynamicFields = app.dynamic_fields || app.form_data || app.fields || {};
+            var name = app.name || dynamicFields.name || '';
+            var phone = app.phone || dynamicFields.phone || '';
+            var position = app.position || dynamicFields.position || '';
+            return name.toLowerCase().includes(searchTerm) || phone.includes(searchTerm) || position.toLowerCase().includes(searchTerm);
+          });
+        }
+
+        console.log('最终显示的应聘信息数量:', applicationsWithBooking.length);
+        allApplications = applicationsWithBooking;
+        renderApplications(applicationsWithBooking);
+
+      } catch (e) {
+        console.error('加载数据失败:', e);
+        // 显示友好的错误信息
+        var errorMessage = e.message || '加载失败';
+        if (errorMessage.includes('Could not find the table')) {
+          errorMessage = '数据库表结构未初始化，请先运行数据库修复工具';
+        }
+        container.innerHTML = '<div class="alert alert-error">加载数据失败: ' + errorMessage + '</div>';
+      }
+    }
+
+    function renderApplications(applications) {
+      var container = document.getElementById('applicationsContainer');
+
+      if (applications.length === 0) {
+        container.innerHTML = '<div class="empty-state"><p>暂无应聘数据</p></div>';
+        document.getElementById('applicationsBulkActions').style.display = 'none';
+        return;
+      }
+
+      var html = '<table class="data-table"><thead><tr>';
+      html += '<th class="checkbox-cell"><input type="checkbox" id="selectAllApplications" onchange="toggleAllApplications(this)"></th>';
+      html += '<th>序号</th>';
+      html += '<th onclick="sortApplications(\'name\')" style="cursor: pointer;">姓名 ↕</th>';
+      html += '<th>电话</th>';
+      html += '<th onclick="sortApplications(\'position\')" style="cursor: pointer;">岗位 ↕</th>';
+      html += '<th>学历</th><th>工作经验</th>';
+      html += '<th onclick="sortApplications(\'booking_date\')" style="cursor: pointer;">面试日期 ↕</th>';
+      html += '<th>面试时段</th><th>预约状态</th><th>应聘状态</th>';
+      html += '<th onclick="sortApplications(\'created_at\')" style="cursor: pointer;">申请时间 ↕</th>';
+      html += '<th>操作</th>';
+      html += '</tr></thead><tbody>';
+
+      var statusMap = { 'pending': '待处理', 'processed': '已处理', 'rejected': '已拒绝' };
+      var bookingStatusMap = { 'pending': '待确认', 'confirmed': '已确认', 'cancelled': '已取消' };
+
+      for (var i = 0; i < applications.length; i++) {
+        var app = applications[i];
+        var statusLabel = statusMap[app.status] || app.status;
+        
+        // 支持多种数据结构：数据库结构和本地存储结构
+        var dynamicFields = app.dynamic_fields || app.form_data || app.fields || {};
+        var name = app.name || dynamicFields.name || '';
+        var phone = app.phone || dynamicFields.phone || '';
+        var position = app.position || dynamicFields.position || '';
+        var education = app.education || dynamicFields.education || '';
+        var experience = app.experience || dynamicFields.experience || '';
+        
+        var bookingDate = '';
+        var bookingSlot = '';
+        var bookingStatus = '';
+        var bookingStatusClass = 'booking-status-none';
+        
+        if (app.booking) {
+          bookingDate = app.booking.booking_date || '';
+          bookingSlot = app.booking.time_slot || '';
+          if (bookingSlot && TIME_SLOTS[bookingSlot]) {
+            bookingSlot = TIME_SLOTS[bookingSlot].label;
+          }
+          bookingStatus = bookingStatusMap[app.booking.status] || app.booking.status || '';
+          bookingStatusClass = 'booking-status-' + app.booking.status;
+        } else {
+          bookingStatus = '未预约';
+        }
+
+        html += '<tr>';
+        html += '<td class="checkbox-cell"><input type="checkbox" class="application-checkbox" value="' + app.id + '" onchange="updateApplicationSelections()"></td>';
+        html += '<td>' + (i + 1) + '</td>';
+        html += '<td>' + name + '</td>';
+        html += '<td>' + phone + '</td>';
+        html += '<td>' + position + '</td>';
+        html += '<td>' + education + '</td>';
+        html += '<td>' + experience + '</td>';
+        html += '<td>' + (bookingDate || '-') + '</td>';
+        html += '<td>' + (bookingSlot || '-') + '</td>';
+        html += '<td><span class="booking-status ' + bookingStatusClass + '">' + bookingStatus + '</span></td>';
+        html += '<td><span class="status status-' + app.status + '">' + statusLabel + '</span></td>';
+        html += '<td>' + new Date(app.created_at).toLocaleString('zh-CN') + '</td>';
+        html += '<td>';
+        html += '<button class="action-btn action-btn-view" onclick="viewApplication(' + app.id + ')">查看</button>';
+        if (app.status === 'pending') {
+          html += '<button class="action-btn action-btn-process" onclick="updateStatus(' + app.id + ', \'processed\')">处理</button>';
+          html += '<button class="action-btn action-btn-reject" onclick="updateStatus(' + app.id + ', \'rejected\')">拒绝</button>';
+        }
+        html += '<button class="action-btn action-btn-delete" onclick="deleteApplication(' + app.id + ', \'' + name + '\')">删除</button>';
+        html += '</td></tr>';
+      }
+
+      html += '</tbody></table>';
+      container.innerHTML = html;
+    }
+
+    async function loadBookings() {
+      var container = document.getElementById('bookingsContainer');
+      container.innerHTML = '<div class="loading"><div class="spinner"></div></div>';
+
+      try {
+        var query = db.from('bookings').select('*');
+        var dateFilter = document.getElementById('filterBookingDate').value;
+        var today = new Date();
+
+        if (dateFilter === 'today') {
+          query = query.eq('booking_date', formatDate(today));
+        } else if (dateFilter === 'week') {
+          var weekStart = new Date(today);
+          weekStart.setDate(today.getDate() - today.getDay() + 1);
+          var weekEnd = new Date(weekStart);
+          weekEnd.setDate(weekStart.getDate() + 6);
+          query = query.gte('booking_date', formatDate(weekStart)).lte('booking_date', formatDate(weekEnd));
+        } else if (dateFilter === 'month') {
+          var monthStart = new Date(today.getFullYear(), today.getMonth(), 1);
+          var monthEnd = new Date(today.getFullYear(), today.getMonth() + 1, 0);
+          query = query.gte('booking_date', formatDate(monthStart)).lte('booking_date', formatDate(monthEnd));
+        }
+
+        var statusFilter = document.getElementById('filterBookingStatus2').value;
+        if (statusFilter) query = query.eq('status', statusFilter);
+
+        var timeSlotFilter = document.getElementById('filterTimeSlot').value;
+        if (timeSlotFilter) query = query.eq('time_slot', timeSlotFilter);
+
+        var result = await query.order('booking_date', { ascending: true }).order('created_at', { ascending: false });
+        if (result.error) throw result.error;
+
+        var searchTerm = document.getElementById('filterBookingSearch').value.toLowerCase();
+        var filteredData = result.data;
+        if (searchTerm) {
+          filteredData = filteredData.filter(b => 
+            b.name.toLowerCase().includes(searchTerm) ||
+            b.phone.includes(searchTerm) ||
+            (b.position && b.position.toLowerCase().includes(searchTerm))
+          );
+        }
+
+        allBookings = filteredData;
+        renderBookings(filteredData);
+
+      } catch (e) {
+        container.innerHTML = '<div class="alert alert-error">加载数据失败: ' + e.message + '</div>';
+      }
+    }
+
+    function renderBookings(bookings) {
+      var container = document.getElementById('bookingsContainer');
+
+      if (bookings.length === 0) {
+        container.innerHTML = '<div class="empty-state"><p>暂无预约数据</p></div>';
+        document.getElementById('bookingsBulkActions').style.display = 'none';
+        return;
+      }
+
+      var html = '<table class="data-table"><thead><tr>';
+      html += '<th class="checkbox-cell"><input type="checkbox" id="selectAllBookings" onchange="toggleAllBookings(this)"></th>';
+      html += '<th>序号</th>';
+      html += '<th onclick="sortBookings(\'name\')" style="cursor: pointer;">姓名 ↕</th>';
+      html += '<th>电话</th>';
+      html += '<th onclick="sortBookings(\'position\')" style="cursor: pointer;">岗位 ↕</th>';
+      html += '<th onclick="sortBookings(\'booking_date\')" style="cursor: pointer;">日期 ↕</th>';
+      html += '<th>时段</th>';
+      html += '<th onclick="sortBookings(\'status\')" style="cursor: pointer;">状态 ↕</th>';
+      html += '<th>操作</th>';
+      html += '</tr></thead><tbody>';
+
+      var statusMap = { 'pending': '待确认', 'confirmed': '已确认', 'cancelled': '已取消' };
+      var weeks = ['周日', '周一', '周二', '周三', '周四', '周五', '周六'];
+
+      for (var i = 0; i < bookings.length; i++) {
+        var b = bookings[i];
+        var timeLabel = TIME_SLOTS[b.time_slot]?.label || b.time_slot;
+        var statusLabel = statusMap[b.status] || b.status;
+        var dateObj = new Date(b.booking_date);
+        var dateStr = (dateObj.getMonth() + 1) + '/' + dateObj.getDate() + ' ' + weeks[dateObj.getDay()];
+
+        html += '<tr>';
+        html += '<td class="checkbox-cell"><input type="checkbox" class="booking-checkbox" value="' + b.id + '" onchange="updateBookingSelections()"></td>';
+        html += '<td>' + (i + 1) + '</td>';
+        html += '<td>' + b.name + '</td>';
+        html += '<td>' + b.phone + '</td>';
+        html += '<td>' + (b.position || '-') + '</td>';
+        html += '<td>' + dateStr + '</td>';
+        html += '<td>' + timeLabel + '</td>';
+        html += '<td><span class="booking-status booking-status-' + b.status + '">' + statusLabel + '</span></td>';
+        html += '<td>';
+        html += '<button class="action-btn action-btn-view" onclick="viewBooking(' + b.id + ')">查看</button>';
+        if (b.status === 'pending') {
+          html += '<button class="action-btn action-btn-process" onclick="updateBookingStatus(' + b.id + ', \'confirmed\')">确认</button>';
+          html += '<button class="action-btn action-btn-reject" onclick="updateBookingStatus(' + b.id + ', \'cancelled\')">取消</button>';
+        } else if (b.status === 'confirmed') {
+          html += '<button class="action-btn action-btn-reject" onclick="updateBookingStatus(' + b.id + ', \'cancelled\')">取消</button>';
+        } else {
+          html += '<button class="action-btn action-btn-process" onclick="updateBookingStatus(' + b.id + ', \'confirmed\')">恢复</button>';
+        }
+        html += '<button class="action-btn action-btn-delete" onclick="deleteBooking(' + b.id + ', \'' + b.name + '\')">删除</button>';
+        html += '</td></tr>';
+      }
+
+      html += '</tbody></table>';
+      container.innerHTML = html;
+    }
+
+    async function viewApplication(id) {
+      try {
+        var app = null;
+        
+        // 首先尝试从数据库加载
+        try {
+          var result = await db.from('applications').select('*').eq('id', id).single();
+          if (!result.error && result.data) {
+            app = result.data;
+          }
+        } catch (dbError) {
+          console.log('从数据库加载失败:', dbError.message);
+        }
+        
+        // 如果数据库中没有，尝试从本地存储加载
+        if (!app) {
+          var localApps = JSON.parse(localStorage.getItem('applications') || '[]');
+          app = localApps.find(a => a.id === id);
+        }
+        
+        if (!app) {
+          showError('未找到该应聘信息');
+          return;
+        }
+        var statusMap = { 'pending': '待处理', 'processed': '已处理', 'rejected': '已拒绝' };
+        var statusLabel = statusMap[app.status] || app.status;
+        var jobTypeMap = { 'apprentice': '学徒/普工', 'technician': '牙科技工/质检员' };
+        var jobTypeLabel = jobTypeMap[app.job_type] || app.job_type || '未指定';
+
+        // 支持多种数据结构：数据库结构和本地存储结构
+        var dynamicFields = app.dynamic_fields || app.form_data || app.fields || {};
+        var name = app.name || dynamicFields.name || '';
+        var gender = app.gender || dynamicFields.gender || '';
+        var phone = app.phone || dynamicFields.phone || '';
+        var age = app.age || dynamicFields.age || '';
+        var position = app.position || dynamicFields.position || '';
+        var education = app.education || dynamicFields.education || '';
+        var experience = app.experience || dynamicFields.experience || '';
+        
+        // 获取预约信息
+        var booking = null;
+        if (phone) {
+          var bookingResult = await db.from('bookings').select('*').eq('phone', phone);
+          if (!bookingResult.error && bookingResult.data && bookingResult.data.length > 0) {
+            booking = bookingResult.data.sort((a, b) => new Date(b.created_at) - new Date(a.created_at))[0];
+          }
+        }
+
+        var html = '<div class="detail-section">';
+        html += '<h4>基本信息</h4>';
+        html += '<div class="detail-grid">';
+        html += '<div class="detail-item"><strong>姓名</strong><span>' + name + '</span></div>';
+        html += '<div class="detail-item"><strong>性别</strong><span>' + gender + '</span></div>';
+        html += '<div class="detail-item"><strong>电话</strong><span>' + phone + '</span></div>';
+        html += '<div class="detail-item"><strong>年龄</strong><span>' + age + '岁</span></div>';
+        html += '<div class="detail-item"><strong>岗位类型</strong><span>' + jobTypeLabel + '</span></div>';
+        html += '<div class="detail-item"><strong>应聘岗位</strong><span>' + position + '</span></div>';
+        html += '<div class="detail-item"><strong>学历</strong><span>' + education + '</span></div>';
+        html += '<div class="detail-item"><strong>工作经验</strong><span>' + experience + '</span></div>';
+        html += '</div></div>';
+        
+        // 显示工作经历（如果有）
+        if (dynamicFields.work_experience && Array.isArray(dynamicFields.work_experience) && dynamicFields.work_experience.length > 0) {
+          html += '<div class="detail-section">';
+          html += '<h4>💼 工作经历</h4>';
+          html += '<div style="display: flex; flex-direction: column; gap: 15px;">';
+          
+          dynamicFields.work_experience.forEach(function(exp, index) {
+            html += '<div style="background: #f8f9ff; padding: 15px; border-radius: 8px; border-left: 4px solid #667eea;">';
+            html += '<h5 style="margin: 0 0 10px 0; color: #667eea;">工作经历 #' + (index + 1) + '</h5>';
+            html += '<div class="detail-grid">';
+            
+            if (exp.company) {
+              html += '<div class="detail-item"><strong>公司名称</strong><span>' + exp.company + '</span></div>';
+            }
+            if (exp.position) {
+              html += '<div class="detail-item"><strong>职位</strong><span>' + exp.position + '</span></div>';
+            }
+            if (exp.startDate) {
+              var start = new Date(exp.startDate);
+              var timeStr = start.getFullYear() + '.' + String(start.getMonth() + 1).padStart(2, '0');
+              if (exp.isCurrent) {
+                timeStr += ' - 至今';
+              } else if (exp.endDate) {
+                var end = new Date(exp.endDate);
+                timeStr += ' - ' + end.getFullYear() + '.' + String(end.getMonth() + 1).padStart(2, '0');
+              } else {
+                timeStr += ' - 至今';
+              }
+              html += '<div class="detail-item"><strong>工作时间</strong><span>' + timeStr + '</span></div>';
+            }
+            if (exp.leaveReason) {
+              html += '<div class="detail-item"><strong>离职原因</strong><span>' + exp.leaveReason + '</span></div>';
+            }
+            if (exp.responsibilities) {
+              html += '<div class="detail-item" style="grid-column: 1 / -1;"><strong>主要工作内容</strong><span>' + exp.responsibilities + '</span></div>';
+            }
+            
+            html += '</div></div>';
+          });
+          
+          html += '</div></div>';
+        }
+
+        // 显示所有动态字段（排除已处理的字段）
+        var hasOtherFields = false;
+        var otherFieldsHtml = '<div class="detail-section"><h4>其他信息</h4><div class="detail-grid">';
+        
+        for (var key in dynamicFields) {
+          if (['name', 'gender', 'phone', 'age', 'position', 'education', 'experience', 'work_experience'].indexOf(key) === -1) {
+            var value = dynamicFields[key];
+            if (value && value !== '') {
+              hasOtherFields = true;
+              var label = translateFieldName(key);
+              // 使用格式化函数处理值
+              var displayValue = formatFieldValue(value, key);
+              otherFieldsHtml += '<div class="detail-item"><strong>' + label + '</strong><span>' + displayValue + '</span></div>';
+            }
+          }
+        }
+        
+        otherFieldsHtml += '</div></div>';
+        
+        if (hasOtherFields) {
+          html += otherFieldsHtml;
+        }
+
+        // 预约信息
+        html += '<div class="booking-info">';
+        html += '<h4>面试预约信息</h4>';
+        if (booking) {
+          var slotLabel = booking.time_slot && TIME_SLOTS[booking.time_slot] ? TIME_SLOTS[booking.time_slot].label : booking.time_slot;
+          var bookingStatus = booking.status === 'pending' ? '待确认' : booking.status === 'confirmed' ? '已确认' : booking.status === 'cancelled' ? '已取消' : booking.status;
+          html += '<div class="detail-grid">';
+          html += '<div class="detail-item"><strong>面试日期</strong><span>' + booking.booking_date + '</span></div>';
+          html += '<div class="detail-item"><strong>面试时段</strong><span>' + slotLabel + '</span></div>';
+          html += '<div class="detail-item"><strong>预约状态</strong><span>' + bookingStatus + '</span></div>';
+          html += '<div class="detail-item"><strong>预约时间</strong><span>' + new Date(booking.created_at).toLocaleString('zh-CN') + '</span></div>';
+          html += '</div>';
+          html += '<div class="booking-actions">';
+          if (booking.status === 'pending') {
+            html += '<button class="btn" onclick="updateBookingStatus(' + booking.id + ', \'confirmed\'); closeModal(\'detailModal\');">确认预约</button>';
+            html += '<button class="btn btn-secondary" onclick="updateBookingStatus(' + booking.id + ', \'cancelled\'); closeModal(\'detailModal\');">取消预约</button>';
+          } else if (booking.status === 'confirmed') {
+            html += '<button class="btn btn-secondary" onclick="updateBookingStatus(' + booking.id + ', \'cancelled\'); closeModal(\'detailModal\');">取消预约</button>';
+          } else {
+            html += '<button class="btn" onclick="updateBookingStatus(' + booking.id + ', \'confirmed\'); closeModal(\'detailModal\');">恢复预约</button>';
+          }
+          html += '</div>';
+        } else {
+          html += '<p style="color: #999;">该应聘者尚未预约面试时间</p>';
+        }
+        html += '</div>';
+
+        // 其他信息
+        html += '<div class="detail-section">';
+        html += '<h4>其他信息</h4>';
+        html += '<div class="detail-grid">';
+        html += '<div class="detail-item"><strong>应聘状态</strong><span class="status status-' + app.status + '">' + statusLabel + '</span></div>';
+        html += '<div class="detail-item"><strong>申请时间</strong><span>' + new Date(app.created_at).toLocaleString('zh-CN') + '</span></div>';
+        html += '</div></div>';
+
+        document.getElementById('detailContent').innerHTML = html;
+        document.getElementById('detailModal').style.display = 'flex';
+      } catch (e) {
+        alert('获取详情失败: ' + e.message);
+      }
+    }
+
+    async function viewBooking(id) {
+      try {
+        var result = await db.from('bookings').select('*').eq('id', id).single();
+        if (result.error) throw result.error;
+        if (!result.data) return;
+
+        var booking = result.data;
+        var statusMap = { 'pending': '待确认', 'confirmed': '已确认', 'cancelled': '已取消' };
+        var slotLabel = booking.time_slot && TIME_SLOTS[booking.time_slot] ? TIME_SLOTS[booking.time_slot].label : booking.time_slot;
+
+        // 查找关联的应聘信息
+        var appResult = await db.from('applications').select('*').eq('phone', booking.phone);
+        var app = appResult.data && appResult.data.length > 0 ? appResult.data[0] : null;
+
+        var html = '<div class="detail-section">';
+        html += '<h4>预约信息</h4>';
+        html += '<div class="detail-grid">';
+        html += '<div class="detail-item"><strong>姓名</strong><span>' + booking.name + '</span></div>';
+        html += '<div class="detail-item"><strong>电话</strong><span>' + booking.phone + '</span></div>';
+        html += '<div class="detail-item"><strong>应聘岗位</strong><span>' + (booking.position || '-') + '</span></div>';
+        html += '<div class="detail-item"><strong>面试日期</strong><span>' + booking.booking_date + '</span></div>';
+        html += '<div class="detail-item"><strong>面试时段</strong><span>' + slotLabel + '</span></div>';
+        html += '<div class="detail-item"><strong>预约状态</strong><span class="booking-status booking-status-' + booking.status + '">' + statusMap[booking.status] + '</span></div>';
+        html += '<div class="detail-item"><strong>预约时间</strong><span>' + new Date(booking.created_at).toLocaleString('zh-CN') + '</span></div>';
+        html += '</div></div>';
+
+        if (app) {
+          var dynamicFields = app.dynamic_fields || app.form_data || {};
+          html += '<div class="detail-section">';
+          html += '<h4>关联的应聘信息</h4>';
+          html += '<div class="detail-grid">';
+          html += '<div class="detail-item"><strong>姓名</strong><span>' + (app.name || dynamicFields.name || '-') + '</span></div>';
+          html += '<div class="detail-item"><strong>学历</strong><span>' + (app.education || dynamicFields.education || '-') + '</span></div>';
+          html += '<div class="detail-item"><strong>工作经验</strong><span>' + (app.experience || dynamicFields.experience || '-') + '</span></div>';
+          html += '<div class="detail-item"><strong>应聘状态</strong><span class="status status-' + app.status + '">' + (app.status === 'pending' ? '待处理' : app.status === 'processed' ? '已处理' : '已拒绝') + '</span></div>';
+          html += '</div></div>';
+        }
+
+        html += '<div class="booking-actions">';
+        if (booking.status === 'pending') {
+          html += '<button class="btn" onclick="updateBookingStatus(' + booking.id + ', \'confirmed\'); closeModal(\'bookingModal\');">确认预约</button>';
+          html += '<button class="btn btn-secondary" onclick="updateBookingStatus(' + booking.id + ', \'cancelled\'); closeModal(\'bookingModal\');">取消预约</button>';
+        } else if (booking.status === 'confirmed') {
+          html += '<button class="btn btn-secondary" onclick="updateBookingStatus(' + booking.id + ', \'cancelled\'); closeModal(\'bookingModal\');">取消预约</button>';
+        } else {
+          html += '<button class="btn" onclick="updateBookingStatus(' + booking.id + ', \'confirmed\'); closeModal(\'bookingModal\');">恢复预约</button>';
+        }
+        html += '</div>';
+
+        document.getElementById('bookingContent').innerHTML = html;
+        document.getElementById('bookingModal').style.display = 'flex';
+      } catch (e) {
+        alert('获取详情失败: ' + e.message);
+      }
+    }
+
+    async function updateStatus(appId, newStatus) {
+      var statusText = newStatus === 'processed' ? '处理' : '拒绝';
+      if (!confirm('确定要' + statusText + '该应聘申请吗？')) return;
+
+      try {
+        // 如果是本地存储的数据
+        if (appId.toString().startsWith('local_')) {
+          var localApps = JSON.parse(localStorage.getItem('applications') || '[]');
+          var appIndex = localApps.findIndex(a => a.id === appId);
+          if (appIndex !== -1) {
+            localApps[appIndex].status = newStatus;
+            localApps[appIndex].updated_at = new Date().toISOString();
+            localStorage.setItem('applications', JSON.stringify(localApps));
+            alert('操作成功！');
+            loadApplications();
+            loadStats();
+            return;
+          }
+        }
+        
+        // 数据库中的数据
+        var result = await db.from('applications').update({ status: newStatus, updated_at: new Date().toISOString() }).eq('id', appId).select();
+        if (result.error) throw result.error;
+        loadApplications();
+        loadStats();
+      } catch (e) {
+        alert('操作失败: ' + e.message);
+      }
+    }
+
+    async function updateBookingStatus(bookingId, newStatus) {
+      var statusText = newStatus === 'confirmed' ? '确认' : '取消';
+      if (!confirm('确定要' + statusText + '该预约吗？')) return;
+
+      try {
+        var result = await db.from('bookings').update({ status: newStatus, updated_at: new Date().toISOString() }).eq('id', bookingId).select();
+        if (result.error) throw result.error;
+        loadBookings();
+        loadApplications();
+        loadStats();
+      } catch (e) {
+        alert('操作失败: ' + e.message);
+      }
+    }
+
+    async function deleteApplication(appId, name) {
+      if (!confirm('确定要删除应聘人 "' + name + '" 的申请记录吗？\n\n此操作将同时删除关联的面试预约记录，且不可恢复！')) return;
+
+      try {
+        // 如果是本地存储的数据
+        if (appId.toString().startsWith('local_')) {
+          var localApps = JSON.parse(localStorage.getItem('applications') || '[]');
+          var initialLength = localApps.length;
+          localApps = localApps.filter(a => a.id !== appId);
+          
+          if (localApps.length < initialLength) {
+            localStorage.setItem('applications', JSON.stringify(localApps));
+            alert('删除成功！');
+            loadApplications();
+            loadStats();
+            return;
+          }
+        }
+
+        // 先删除关联的预约记录
+        var bookingResult = await db.from('bookings').delete().eq('application_id', appId);
+        if (bookingResult.error) {
+          console.log('删除关联预约记录失败（可能不存在）:', bookingResult.error);
+        } else {
+          console.log('已删除关联的预约记录');
+        }
+
+        // 删除应聘记录
+        var result = await db.from('applications').delete().eq('id', appId);
+        if (result.error) throw result.error;
+
+        alert('删除成功！');
+        loadApplications();
+        loadBookings();
+        loadStats();
+      } catch (e) {
+        alert('删除失败: ' + e.message);
+      }
+    }
+
+    async function deleteBooking(bookingId, name) {
+      if (!confirm('确定要删除 "' + name + '" 的面试预约记录吗？\n\n此操作不可恢复！')) return;
+
+      try {
+        var result = await db.from('bookings').delete().eq('id', bookingId);
+        if (result.error) throw result.error;
+
+        alert('删除成功！');
+        loadBookings();
+        loadApplications();
+        loadStats();
+      } catch (e) {
+        alert('删除失败: ' + e.message);
+      }
+    }
+
+    // 全局变量：存储选中的记录
+    var selectedApplicationIds = new Set();
+    var selectedBookingIds = new Set();
+
+    // 应聘信息：全选/取消全选
+    function toggleAllApplications(checkbox) {
+      var checkboxes = document.querySelectorAll('.application-checkbox');
+      checkboxes.forEach(function(cb) {
+        cb.checked = checkbox.checked;
+      });
+      updateApplicationSelections();
+    }
+
+    // 应聘信息：更新选中状态
+    function updateApplicationSelections() {
+      var checkboxes = document.querySelectorAll('.application-checkbox:checked');
+      selectedApplicationIds.clear();
+      checkboxes.forEach(function(cb) {
+        selectedApplicationIds.add(parseInt(cb.value));
+      });
+      
+      var count = selectedApplicationIds.size;
+      document.getElementById('applicationsSelectedCount').textContent = '已选择 ' + count + ' 条记录';
+      document.getElementById('applicationsBulkActions').style.display = count > 0 ? 'block' : 'none';
+      
+      // 更新全选状态
+      var selectAll = document.getElementById('selectAllApplications');
+      var allCheckboxes = document.querySelectorAll('.application-checkbox');
+      if (selectAll && allCheckboxes.length > 0) {
+        selectAll.checked = count === allCheckboxes.length;
+      }
+    }
+
+    // 应聘信息：清空选择
+    function clearApplicationSelections() {
+      selectedApplicationIds.clear();
+      var checkboxes = document.querySelectorAll('.application-checkbox');
+      checkboxes.forEach(function(cb) {
+        cb.checked = false;
+      });
+      document.getElementById('applicationsBulkActions').style.display = 'none';
+    }
+
+    // 应聘信息：批量删除
+    async function bulkDeleteApplications() {
+      var count = selectedApplicationIds.size;
+      if (count === 0) {
+        alert('请先选择要删除的记录');
+        return;
+      }
+
+      if (!confirm('确定要批量删除选中的 ' + count + ' 条应聘记录吗？\n\n此操作将同时删除关联的面试预约记录，且不可恢复！')) return;
+
+      try {
+        var ids = Array.from(selectedApplicationIds);
+        var successCount = 0;
+        var failCount = 0;
+        var errors = [];
+
+        for (var i = 0; i < ids.length; i++) {
+          try {
+            // 先删除关联的预约记录
+            await db.from('bookings').delete().eq('application_id', ids[i]);
+            
+            // 删除应聘记录
+            var result = await db.from('applications').delete().eq('id', ids[i]);
+            if (result.error) throw result.error;
+            successCount++;
+          } catch (e) {
+            failCount++;
+            errors.push('ID ' + ids[i] + ': ' + e.message);
+          }
+        }
+
+        var message = '删除完成！成功 ' + successCount + ' 条';
+        if (failCount > 0) {
+          message += '，失败 ' + failCount + ' 条\n\n失败详情：\n' + errors.join('\n');
+        }
+        alert(message);
+
+        clearApplicationSelections();
+        loadApplications();
+        loadBookings();
+        loadStats();
+      } catch (e) {
+        alert('批量删除失败: ' + e.message);
+      }
+    }
+
+    // 面试预约：全选/取消全选
+    function toggleAllBookings(checkbox) {
+      var checkboxes = document.querySelectorAll('.booking-checkbox');
+      checkboxes.forEach(function(cb) {
+        cb.checked = checkbox.checked;
+      });
+      updateBookingSelections();
+    }
+
+    // 面试预约：更新选中状态
+    function updateBookingSelections() {
+      var checkboxes = document.querySelectorAll('.booking-checkbox:checked');
+      selectedBookingIds.clear();
+      checkboxes.forEach(function(cb) {
+        selectedBookingIds.add(parseInt(cb.value));
+      });
+      
+      var count = selectedBookingIds.size;
+      document.getElementById('bookingsSelectedCount').textContent = '已选择 ' + count + ' 条记录';
+      document.getElementById('bookingsBulkActions').style.display = count > 0 ? 'block' : 'none';
+      
+      // 更新全选状态
+      var selectAll = document.getElementById('selectAllBookings');
+      var allCheckboxes = document.querySelectorAll('.booking-checkbox');
+      if (selectAll && allCheckboxes.length > 0) {
+        selectAll.checked = count === allCheckboxes.length;
+      }
+    }
+
+    // 面试预约：清空选择
+    function clearBookingSelections() {
+      selectedBookingIds.clear();
+      var checkboxes = document.querySelectorAll('.booking-checkbox');
+      checkboxes.forEach(function(cb) {
+        cb.checked = false;
+      });
+      document.getElementById('bookingsBulkActions').style.display = 'none';
+    }
+
+    // 面试预约：批量删除
+    async function bulkDeleteBookings() {
+      var count = selectedBookingIds.size;
+      if (count === 0) {
+        alert('请先选择要删除的记录');
+        return;
+      }
+
+      if (!confirm('确定要批量删除选中的 ' + count + ' 条面试预约记录吗？\n\n此操作不可恢复！')) return;
+
+      try {
+        var ids = Array.from(selectedBookingIds);
+        var successCount = 0;
+        var failCount = 0;
+        var errors = [];
+
+        for (var i = 0; i < ids.length; i++) {
+          try {
+            var result = await db.from('bookings').delete().eq('id', ids[i]);
+            if (result.error) throw result.error;
+            successCount++;
+          } catch (e) {
+            failCount++;
+            errors.push('ID ' + ids[i] + ': ' + e.message);
+          }
+        }
+
+        var message = '删除完成！成功 ' + successCount + ' 条';
+        if (failCount > 0) {
+          message += '，失败 ' + failCount + ' 条\n\n失败详情：\n' + errors.join('\n');
+        }
+        alert(message);
+
+        clearBookingSelections();
+        loadBookings();
+        loadApplications();
+        loadStats();
+      } catch (e) {
+        alert('批量删除失败: ' + e.message);
+      }
+    }
+
+    function sortApplications(field) {
+      // 如果点击同一字段，切换排序方向
+      if (sortField === field) {
+        sortDirection = sortDirection === 'asc' ? 'desc' : 'asc';
+      } else {
+        sortField = field;
+        sortDirection = 'asc';
+      }
+
+      // 排序数据
+      allApplications.sort(function(a, b) {
+        var valA, valB;
+        
+        // 获取字段值
+        if (field === 'booking_date') {
+          valA = a.booking ? a.booking.booking_date : '';
+          valB = b.booking ? b.booking.booking_date : '';
+        } else if (field === 'name') {
+          var dynamicFieldsA = a.dynamic_fields || a.form_data || {};
+          var dynamicFieldsB = b.dynamic_fields || b.form_data || {};
+          valA = a.name || dynamicFieldsA.name || '';
+          valB = b.name || dynamicFieldsB.name || '';
+        } else if (field === 'position') {
+          var dynamicFieldsA = a.dynamic_fields || a.form_data || {};
+          var dynamicFieldsB = b.dynamic_fields || b.form_data || {};
+          valA = a.position || dynamicFieldsA.position || '';
+          valB = b.position || dynamicFieldsB.position || '';
+        } else {
+          valA = a[field] || '';
+          valB = b[field] || '';
+        }
+        
+        // 比较值
+        if (valA < valB) return sortDirection === 'asc' ? -1 : 1;
+        if (valA > valB) return sortDirection === 'asc' ? 1 : -1;
+        return 0;
+      });
+
+      // 重新渲染
+      renderApplications(allApplications);
+    }
+
+    function sortBookings(field) {
+      // 如果点击同一字段，切换排序方向
+      if (bookingSortField === field) {
+        bookingSortDirection = bookingSortDirection === 'asc' ? 'desc' : 'asc';
+      } else {
+        bookingSortField = field;
+        bookingSortDirection = 'asc';
+      }
+
+      // 排序数据
+      allBookings.sort(function(a, b) {
+        var valA = a[field] || '';
+        var valB = b[field] || '';
+        
+        // 比较值
+        if (valA < valB) return bookingSortDirection === 'asc' ? -1 : 1;
+        if (valA > valB) return bookingSortDirection === 'asc' ? 1 : -1;
+        return 0;
+      });
+
+      // 重新渲染
+      renderBookings(allBookings);
+    }
+
+    function showExportPreview() {
+      if (!checkPermission('export')) {
+        alert('您没有导出权限');
+        return;
+      }
+
+      if (allApplications.length === 0) {
+        alert('没有可导出的数据');
+        return;
+      }
+
+      var previewContent = document.getElementById('previewContent');
+      previewContent.innerHTML = '<div class="loading"><div class="spinner"></div><p>正在生成预览...</p></div>';
+
+      setTimeout(function() {
+        var statusMap = { 'pending': '待处理', 'processed': '已处理', 'rejected': '已拒绝' };
+        var previewHTML = '<div style="line-height: 1.6;">';
+        previewHTML += '<p><strong>导出数据概览：</strong></p>';
+        previewHTML += '<ul style="margin-left: 20px; margin-top: 10px;">';
+        previewHTML += '<li>总记录数：' + allApplications.length + ' 条</li>';
+        
+        var statusCount = { 'pending': 0, 'processed': 0, 'rejected': 0 };
+        for (var i = 0; i < allApplications.length; i++) {
+          var status = allApplications[i].status;
+          if (statusCount.hasOwnProperty(status)) {
+            statusCount[status]++;
+          }
+        }
+        
+        for (var status in statusCount) {
+          if (statusCount[status] > 0) {
+            previewHTML += '<li>' + statusMap[status] + '：' + statusCount[status] + ' 条</li>';
+          }
+        }
+        
+        previewHTML += '</ul>';
+        previewHTML += '<p style="margin-top: 15px;"><strong>数据字段：</strong></p>';
+        previewHTML += '<p>编号、姓名、电话、岗位、学历、工作经验、面试日期、面试时段、预约状态、应聘状态、申请时间</p>';
+        previewHTML += '</div>';
+        
+        previewContent.innerHTML = previewHTML;
+      }, 500);
+
+      document.getElementById('exportPreviewModal').style.display = 'block';
+    }
+
+    function exportToExcel() {
+      if (!checkPermission('export')) {
+        alert('您没有导出权限');
+        return;
+      }
+
+      if (allApplications.length === 0) {
+        alert('没有可导出的数据');
+        return;
+      }
+
+      var progressContainer = document.getElementById('progressContainer');
+      var progressBar = document.getElementById('progressBar');
+      progressContainer.style.display = 'block';
+      progressBar.style.width = '0%';
+
+      document.getElementById('exportPreviewModal').style.display = 'none';
+
+      setTimeout(async function() {
+        try {
+          var statusMap = { 'pending': '待处理', 'processed': '已处理', 'rejected': '已拒绝' };
+          var bookingStatusMap = { 'pending': '待确认', 'confirmed': '已确认', 'cancelled': '已取消' };
+          
+          // 收集所有可能的字段
+          var allFieldNames = ['编号', '姓名', '电话', '应聘岗位', '学历', '工作经验', '面试日期', '面试时段', '预约状态', '应聘状态', '申请时间'];
+          var fieldSet = new Set(allFieldNames);
+          
+          // 先收集所有动态字段
+          for (var i = 0; i < allApplications.length; i++) {
+            var app = allApplications[i];
+            var dynamicFields = app.dynamic_fields || app.form_data || {};
+            
+            // 添加所有动态字段名
+            for (var fieldName in dynamicFields) {
+              // 跳过已有的基本字段
+              var translatedField = translateFieldName(fieldName);
+              if (!fieldSet.has(translatedField)) {
+                fieldSet.add(translatedField);
+                allFieldNames.push(translatedField);
+              }
+            }
+          }
+          
+          var exportData = [];
+          
+          for (var i = 0; i < allApplications.length; i++) {
+            var app = allApplications[i];
+            var dynamicFields = app.dynamic_fields || app.form_data || {};
+            
+            var exportItem = {
+              '编号': app.id,
+              '姓名': app.name || dynamicFields.name || '',
+              '电话': app.phone || dynamicFields.phone || '',
+              '应聘岗位': app.position || app.position_name || dynamicFields.position_name || '',
+              '学历': app.education || dynamicFields.education || '',
+              '工作经验': app.experience || dynamicFields.experience || '',
+              '面试日期': app.booking ? app.booking.booking_date || '' : '',
+              '面试时段': app.booking ? (app.booking.time_slot && TIME_SLOTS[app.booking.time_slot] ? TIME_SLOTS[app.booking.time_slot].label : app.booking.time_slot || '') : '',
+              '预约状态': app.booking ? (bookingStatusMap[app.booking.status] || app.booking.status || '') : '未预约',
+              '应聘状态': statusMap[app.status] || '待处理',
+              '申请时间': new Date(app.created_at).toLocaleString('zh-CN')
+            };
+            
+            // 添加所有动态字段
+            for (var fieldName in dynamicFields) {
+              var translatedField = translateFieldName(fieldName);
+              var fieldValue = dynamicFields[fieldName];
+              // 使用格式化函数处理字段值
+              exportItem[translatedField] = formatFieldValue(fieldValue, fieldName);
+            }
+
+            exportData.push(exportItem);
+            progressBar.style.width = Math.round(((i + 1) / allApplications.length) * 80) + '%';
+          }
+
+          var csv = allFieldNames.join(',') + '\n';
+          
+          for (var i = 0; i < exportData.length; i++) {
+            var row = [];
+            for (var j = 0; j < allFieldNames.length; j++) {
+              var val = exportData[i][allFieldNames[j]] || '';
+              val = String(val).replace(/"/g, '""');
+              if (val.indexOf(',') !== -1 || val.indexOf('"') !== -1 || val.indexOf('\n') !== -1) {
+                val = '"' + val + '"';
+              }
+              row.push(val);
+            }
+            csv += row.join(',') + '\n';
+          }
+
+          progressBar.style.width = '90%';
+
+          var blob = new Blob(['\ufeff' + csv], { type: 'text/csv;charset=utf-8;' });
+          var link = document.createElement('a');
+          var filename = '应聘信息数据_' + formatDate(new Date()) + '.csv';
+          link.href = URL.createObjectURL(blob);
+          link.download = filename;
+          link.click();
+
+          progressBar.style.width = '100%';
+
+          var exportRecord = {
+            timestamp: new Date().toLocaleString('zh-CN'),
+            count: allApplications.length,
+            user: currentUser ? currentUser.name : '未知用户',
+            filename: filename
+          };
+          addExportHistory(exportRecord);
+
+          setTimeout(function() {
+            progressContainer.style.display = 'none';
+            alert('导出成功！文件已下载。');
+          }, 500);
+
+        } catch (e) {
+          console.error('导出失败:', e);
+          progressContainer.style.display = 'none';
+          alert('导出失败: ' + e.message);
+        }
+      }, 500);
+    }
+    
+    // 字段名称翻译函数
+    function translateFieldName(fieldName) {
+      var fieldNameMap = {
+        'name': '姓名',
+        'phone': '电话',
+        'age': '年龄',
+        'gender': '性别',
+        'education': '学历',
+        'experience': '工作经验',
+        'source_channel': '招聘渠道',
+        'source_channel_extra': '招聘渠道补充信息',
+        'self_introduction': '自我介绍',
+        'technical_skills': '技术技能',
+        'marital_status': '婚姻状况',
+        'id_card': '身份证号',
+        'address': '地址',
+        'email': '邮箱',
+        'emergency_contact': '紧急联系人',
+        'emergency_phone': '紧急联系电话',
+        'work_experience': '工作经历'
+      };
+      return fieldNameMap[fieldName] || fieldName;
+    }
+
+    // 格式化字段值（处理对象、数组等特殊类型）
+    function formatFieldValue(value, fieldName) {
+      if (value === null || value === undefined) {
+        return '';
+      }
+      
+      // 处理工作经历数组
+      if (fieldName === 'work_experience' && Array.isArray(value)) {
+        return formatWorkExperience(value);
+      }
+      
+      // 处理数组类型
+      if (Array.isArray(value)) {
+        return value.map(function(item) {
+          if (typeof item === 'object') {
+            return formatFieldValue(item, '');
+          }
+          return String(item);
+        }).join('; ');
+      }
+      
+      // 处理对象类型
+      if (typeof value === 'object') {
+        // 如果是工作经历对象（单个）
+        if (value.company || value.position) {
+          return formatWorkExperience([value]);
+        }
+        // 其他对象类型
+        try {
+          return JSON.stringify(value);
+        } catch (e) {
+          return String(value);
+        }
+      }
+      
+      return String(value);
+    }
+
+    // 格式化工作经历为可读文本
+    function formatWorkExperience(experiences) {
+      if (!Array.isArray(experiences) || experiences.length === 0) {
+        return '';
+      }
+      
+      return experiences.map(function(exp, index) {
+        var parts = [];
+        
+        // 公司名称
+        if (exp.company) {
+          parts.push(exp.company);
+        }
+        
+        // 职位
+        if (exp.position) {
+          parts.push(exp.position);
+        }
+        
+        // 工作时间
+        var timeRange = '';
+        if (exp.startDate) {
+          var start = new Date(exp.startDate);
+          timeRange = start.getFullYear() + '.' + String(start.getMonth() + 1).padStart(2, '0');
+          
+          if (exp.isCurrent) {
+            timeRange += '-至今';
+          } else if (exp.endDate) {
+            var end = new Date(exp.endDate);
+            timeRange += '-' + end.getFullYear() + '.' + String(end.getMonth() + 1).padStart(2, '0');
+          } else {
+            timeRange += '-至今';
+          }
+          parts.push(timeRange);
+        }
+        
+        // 离职原因
+        if (exp.leaveReason) {
+          parts.push('离职原因:' + exp.leaveReason);
+        }
+        
+        // 工作内容（简要）
+        if (exp.responsibilities) {
+          var resp = exp.responsibilities.length > 30 ? 
+            exp.responsibilities.substring(0, 30) + '...' : 
+            exp.responsibilities;
+          parts.push('工作内容:' + resp);
+        }
+        
+        return (index + 1) + '.' + parts.join(' | ');
+      }).join('\n');
+    }
+
+    function exportBookingsToExcel() {
+      if (allBookings.length === 0) {
+        alert('没有可导出的数据');
+        return;
+      }
+
+      var statusMap = { 'pending': '待确认', 'confirmed': '已确认', 'cancelled': '已取消' };
+      var exportData = [];
+      
+      for (var i = 0; i < allBookings.length; i++) {
+        var b = allBookings[i];
+        exportData.push({
+          '预约编号': b.id,
+          '姓名': b.name,
+          '联系电话': b.phone,
+          '应聘岗位': b.position || '',
+          '面试日期': b.booking_date,
+          '时段': TIME_SLOTS[b.time_slot]?.label || b.time_slot,
+          '状态': statusMap[b.status] || b.status,
+          '备注': b.notes || '',
+          '预约时间': new Date(b.created_at).toLocaleString('zh-CN')
+        });
+      }
+
+      var headers = ['预约编号', '姓名', '联系电话', '应聘岗位', '面试日期', '时段', '状态', '备注', '预约时间'];
+      var csv = headers.join(',') + '\n';
+      
+      for (var i = 0; i < exportData.length; i++) {
+        var row = [];
+        for (var j = 0; j < headers.length; j++) {
+          var val = exportData[i][headers[j]] || '';
+          val = String(val).replace(/"/g, '""');
+          if (val.indexOf(',') !== -1 || val.indexOf('"') !== -1 || val.indexOf('\n') !== -1) {
+            val = '"' + val + '"';
+          }
+          row.push(val);
+        }
+        csv += row.join(',') + '\n';
+      }
+
+      var blob = new Blob(['\ufeff' + csv], { type: 'text/csv;charset=utf-8;' });
+      var link = document.createElement('a');
+      link.href = URL.createObjectURL(blob);
+      link.download = '面试预约数据_' + formatDate(new Date()) + '.csv';
+      link.click();
+    }
+
+    document.addEventListener('DOMContentLoaded', loadSDK);
+  </script>
+</body>
+</html>

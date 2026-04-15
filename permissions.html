@@ -1027,6 +1027,18 @@
                                 await new Promise(resolve => setTimeout(resolve, 65000));
                                 return await createUserWithRetry(attempts - 1);
                             }
+                            if (authError.message.includes('already registered') || 
+                                authError.message.includes('User already exists')) {
+                                console.warn('用户已存在，尝试获取现有用户信息');
+                                const { data: signInData, error: signInError } = await supabaseClient.auth.signInWithPassword({
+                                    email: username,
+                                    password: password
+                                });
+                                if (signInError) {
+                                    throw new Error('用户已存在但登录失败: ' + signInError.message);
+                                }
+                                return signInData;
+                            }
                             throw authError;
                         }
                         return authData;
@@ -1044,28 +1056,30 @@
                     // 确认邮箱 - 多种方式尝试
                     await confirmUserEmail(username);
 
-                    // 插入角色记录
-                    const insertRoleWithRetry = async (attempts = 3) => {
+                    // 插入或更新角色记录（使用 upsert 避免重复）
+                    const upsertRoleWithRetry = async (attempts = 3) => {
                         const { error: roleError } = await supabaseClient
                             .from('user_roles')
-                            .insert({
+                            .upsert({
                                 user_id: authData.user.id,
                                 role: role,
                                 name: name
+                            }, {
+                                onConflict: 'user_id'
                             });
 
                         if (roleError) {
                             if (roleError.code === '42501' && attempts > 0) {
                                 console.warn('RLS权限限制，等待后重试');
                                 await new Promise(resolve => setTimeout(resolve, 2000));
-                                return await insertRoleWithRetry(attempts - 1);
+                                return await upsertRoleWithRetry(attempts - 1);
                             }
                             throw roleError;
                         }
                         return true;
                     };
 
-                    await insertRoleWithRetry();
+                    await upsertRoleWithRetry();
                     console.log('角色记录插入成功');
 
                     users.push({
